@@ -1,9 +1,10 @@
 import os
 import random
+import difflib
 import discord
 from discord.ext import commands
-from datetime import timedelta
 from discord.ui import View, Select
+from datetime import timedelta
 
 TOKEN = os.getenv("TOKEN")
 
@@ -22,12 +23,13 @@ bot = commands.Bot(
 @bot.event
 async def on_ready():
     print(f"{bot.user} aktif!")
+
     await bot.change_presence(
         activity=discord.Game(".yardım")
     )
 
 # ==================================================
-# HATA SISTEMI
+# ERROR SYSTEM
 # ==================================================
 
 @bot.event
@@ -36,11 +38,11 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         return await ctx.send("Bunun için yetkin yok.")
 
-    if isinstance(error, commands.MissingRequiredArgument):
-        return await ctx.send("Eksik argüman girdin.")
-
     if isinstance(error, commands.MemberNotFound):
         return await ctx.send("Üye bulunamadı.")
+
+    if isinstance(error, commands.MissingRequiredArgument):
+        return await ctx.send("Eksik argüman girdin.")
 
     raise error
 
@@ -65,7 +67,7 @@ async def can_moderate(ctx, member):
 # YARDIM MENUSU
 # ==================================================
 
-class HelpMenu(Select):
+class HelpSelect(Select):
 
     def __init__(self):
 
@@ -94,11 +96,11 @@ class HelpMenu(Select):
 
     async def callback(self, interaction: discord.Interaction):
 
-        category = self.values[0]
+        value = self.values[0]
 
-        if category == "Moderasyon":
+        if value == "Moderasyon":
 
-            text = """
+            desc = """
 `.ban`
 `.kick`
 `.timeout`
@@ -111,20 +113,23 @@ class HelpMenu(Select):
 `.rolal`
 """
 
-        elif category == "Eğlence":
+        elif value == "Eğlence":
 
-            text = """
+            desc = """
 `.zar`
 `.yazitura`
 `.iq`
 `.8ball`
 `.slot`
 `.ship`
+`.öp`
+`.tokat`
+`.hackle`
 """
 
         else:
 
-            text = """
+            desc = """
 `.ping`
 `.avatar`
 `.sunucu`
@@ -133,8 +138,8 @@ class HelpMenu(Select):
 """
 
         embed = discord.Embed(
-            title=f"{category} Komutları",
-            description=text,
+            title=f"{value} Komutları",
+            description=desc,
             color=discord.Color.blurple()
         )
 
@@ -146,7 +151,7 @@ class HelpView(View):
 
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(HelpMenu())
+        self.add_item(HelpSelect())
 
 @bot.command()
 async def yardım(ctx):
@@ -171,7 +176,9 @@ async def yardım(ctx):
 async def ban(ctx, member: discord.Member, *, reason="Sebep belirtilmedi"):
 
     if not await can_moderate(ctx, member):
-        return await ctx.send("Bu kişiyi banlayamazsın.")
+        return await ctx.send(
+            "Bu kişiyi banlayamazsın."
+        )
 
     await member.ban(reason=reason)
 
@@ -188,7 +195,9 @@ async def ban(ctx, member: discord.Member, *, reason="Sebep belirtilmedi"):
 async def kick(ctx, member: discord.Member, *, reason="Sebep belirtilmedi"):
 
     if not await can_moderate(ctx, member):
-        return await ctx.send("Bu kişiyi kickleyemezsin.")
+        return await ctx.send(
+            "Bu kişiyi kickleyemezsin."
+        )
 
     await member.kick(reason=reason)
 
@@ -202,10 +211,18 @@ async def kick(ctx, member: discord.Member, *, reason="Sebep belirtilmedi"):
 
 @bot.command()
 @commands.has_permissions(moderate_members=True)
-async def timeout(ctx, member: discord.Member, dakika: int, *, reason="Sebep belirtilmedi"):
+async def timeout(
+    ctx,
+    member: discord.Member,
+    dakika: int,
+    *,
+    reason="Sebep belirtilmedi"
+):
 
     if not await can_moderate(ctx, member):
-        return await ctx.send("Bu kişiye timeout atamazsın.")
+        return await ctx.send(
+            "Bu kişiye timeout atamazsın."
+        )
 
     duration = timedelta(minutes=dakika)
 
@@ -216,7 +233,10 @@ async def timeout(ctx, member: discord.Member, dakika: int, *, reason="Sebep bel
 
     embed = discord.Embed(
         title="⏳ Timeout",
-        description=f"{member.mention} {dakika} dakika susturuldu.",
+        description=(
+            f"{member.mention} "
+            f"{dakika} dakika susturuldu."
+        ),
         color=discord.Color.yellow()
     )
 
@@ -228,7 +248,9 @@ async def untimeout(ctx, member: discord.Member):
 
     await member.timeout(None)
 
-    await ctx.send(f"{member.mention} timeout kaldırıldı.")
+    await ctx.send(
+        f"{member.mention} timeout kaldırıldı."
+    )
 
 @bot.command()
 @commands.has_permissions(manage_messages=True)
@@ -236,7 +258,9 @@ async def sil(ctx, amount: int):
 
     await ctx.channel.purge(limit=amount + 1)
 
-    msg = await ctx.send(f"{amount} mesaj silindi.")
+    msg = await ctx.send(
+        f"{amount} mesaj silindi."
+    )
 
     await msg.delete(delay=3)
 
@@ -270,29 +294,125 @@ async def slowmode(ctx, seconds: int):
         slowmode_delay=seconds
     )
 
-    await ctx.send(f"Slowmode {seconds} saniye oldu.")
+    await ctx.send(
+        f"Slowmode {seconds} saniye oldu."
+    )
+
+# ==================================================
+# GELISMIS ROLVER
+# ==================================================
 
 @bot.command()
 @commands.has_permissions(manage_roles=True)
-async def rolver(ctx, member: discord.Member, *, role: discord.Role):
+async def rolver(ctx, member_or_role=None, *, role_name=None):
+
+    member = None
+    role_query = None
+
+    # =========================
+    # YANIT SISTEMI
+    # =========================
+
+    if ctx.message.reference:
+
+        replied_message = await ctx.channel.fetch_message(
+            ctx.message.reference.message_id
+        )
+
+        member = replied_message.author
+
+        role_query = member_or_role
+
+    else:
+
+        if not ctx.message.mentions:
+            return await ctx.send(
+                "Bir kullanıcı etiketlemelisin "
+                "veya mesaja yanıt vermelisin."
+            )
+
+        member = ctx.message.mentions[0]
+
+        role_query = role_name
+
+    if not role_query:
+        return await ctx.send(
+            "Rol belirtmelisin."
+        )
+
+    # =========================
+    # EN YAKIN ROL BULMA
+    # =========================
+
+    role_names = [r.name for r in ctx.guild.roles]
+
+    closest = difflib.get_close_matches(
+        role_query,
+        role_names,
+        n=1,
+        cutoff=0.3
+    )
+
+    if not closest:
+        return await ctx.send(
+            "Rol bulunamadı."
+        )
+
+    role = discord.utils.get(
+        ctx.guild.roles,
+        name=closest[0]
+    )
+
+    # =========================
+    # YETKI KONTROL
+    # =========================
 
     if role >= ctx.author.top_role:
-        return await ctx.send("Bu rolü veremezsin.")
+        return await ctx.send(
+            "Bu rolü veremezsin."
+        )
+
+    if role >= ctx.guild.me.top_role:
+        return await ctx.send(
+            "Bu rol benim rolümden yüksek."
+        )
+
+    # =========================
+    # ROL VER
+    # =========================
 
     await member.add_roles(role)
 
-    await ctx.send(f"{member.mention} kişisine {role.name} verildi.")
+    embed = discord.Embed(
+        title="✅ Rol Verildi",
+        description=(
+            f"{member.mention} kişisine "
+            f"`{role.name}` rolü verildi."
+        ),
+        color=discord.Color.green()
+    )
+
+    await ctx.send(embed=embed)
+
+# ==================================================
+# ROL AL
+# ==================================================
 
 @bot.command()
 @commands.has_permissions(manage_roles=True)
 async def rolal(ctx, member: discord.Member, *, role: discord.Role):
 
     if role >= ctx.author.top_role:
-        return await ctx.send("Bu rolü alamazsın.")
+        return await ctx.send(
+            "Bu rolü alamazsın."
+        )
 
     await member.remove_roles(role)
 
-    await ctx.send(f"{member.mention} kişisinden {role.name} alındı.")
+    await ctx.send(
+        f"{member.mention} kişisinden "
+        f"{role.name} alındı."
+    )
 
 # ==================================================
 # EGLENCE
@@ -301,15 +421,20 @@ async def rolal(ctx, member: discord.Member, *, role: discord.Role):
 @bot.command()
 async def zar(ctx):
 
-    await ctx.send(f"🎲 Zar sonucu: {random.randint(1,6)}")
+    await ctx.send(
+        f"🎲 Zar sonucu: "
+        f"{random.randint(1,6)}"
+    )
 
 @bot.command()
 async def yazitura(ctx):
 
-    await ctx.send(random.choice([
-        "Yazı",
-        "Tura"
-    ]))
+    await ctx.send(
+        random.choice([
+            "Yazı",
+            "Tura"
+        ])
+    )
 
 @bot.command()
 async def iq(ctx, member: discord.Member=None):
@@ -334,12 +459,19 @@ async def eightball(ctx, *, question):
         "Büyük ihtimalle"
     ]
 
-    await ctx.send(random.choice(answers))
+    await ctx.send(
+        random.choice(answers)
+    )
 
 @bot.command()
 async def slot(ctx):
 
-    emojis = ["🍎", "🍌", "🍇", "💎"]
+    emojis = [
+        "🍎",
+        "🍌",
+        "🍇",
+        "💎"
+    ]
 
     result = [
         random.choice(emojis),
@@ -350,17 +482,70 @@ async def slot(ctx):
     text = " | ".join(result)
 
     if len(set(result)) == 1:
-        await ctx.send(f"{text}\nKazandın!")
+
+        await ctx.send(
+            f"{text}\nKazandın!"
+        )
+
     else:
-        await ctx.send(f"{text}\nKaybettin!")
+
+        await ctx.send(
+            f"{text}\nKaybettin!"
+        )
 
 @bot.command()
-async def ship(ctx, member1: discord.Member, member2: discord.Member):
+async def ship(
+    ctx,
+    member1: discord.Member,
+    member2: discord.Member
+):
 
     percent = random.randint(1,100)
 
     await ctx.send(
-        f"❤️ {member1.name} + {member2.name} = %{percent}"
+        f"❤️ {member1.name} + "
+        f"{member2.name} = %{percent}"
+    )
+
+@bot.command()
+async def öp(ctx, member: discord.Member):
+
+    await ctx.send(
+        f"😘 {ctx.author.mention} "
+        f"{member.mention} kişisini öptü."
+    )
+
+@bot.command()
+async def tokat(ctx, member: discord.Member):
+
+    await ctx.send(
+        f"👋 {ctx.author.mention} "
+        f"{member.mention} kişisine tokat attı."
+    )
+
+@bot.command()
+async def hackle(ctx, member: discord.Member):
+
+    stages = [
+        "IP bulunuyor...",
+        "Discord tokeni çekiliyor...",
+        "Minecraft hesabı ele geçiriliyor...",
+        "Annesinin kızlık soyadı bulunuyor..."
+    ]
+
+    msg = await ctx.send(
+        "Hack işlemi başladı..."
+    )
+
+    for stage in stages:
+
+        await msg.edit(content=stage)
+
+    await msg.edit(
+        content=(
+            f"✅ {member.mention} "
+            f"başarıyla hacklendi."
+        )
     )
 
 # ==================================================
@@ -372,7 +557,9 @@ async def ping(ctx):
 
     latency = round(bot.latency * 1000)
 
-    await ctx.send(f"🏓 Pong! `{latency}ms`")
+    await ctx.send(
+        f"🏓 Pong! `{latency}ms`"
+    )
 
 @bot.command()
 async def avatar(ctx, member: discord.Member=None):
@@ -380,7 +567,8 @@ async def avatar(ctx, member: discord.Member=None):
     member = member or ctx.author
 
     embed = discord.Embed(
-        title=f"{member.name} Avatar"
+        title=f"{member.name} Avatar",
+        color=discord.Color.blue()
     )
 
     embed.set_image(
@@ -396,7 +584,7 @@ async def sunucu(ctx):
 
     embed = discord.Embed(
         title=guild.name,
-        color=discord.Color.blue()
+        color=discord.Color.green()
     )
 
     embed.add_field(
@@ -410,6 +598,7 @@ async def sunucu(ctx):
     )
 
     if guild.icon:
+
         embed.set_thumbnail(
             url=guild.icon.url
         )
@@ -417,13 +606,16 @@ async def sunucu(ctx):
     await ctx.send(embed=embed)
 
 @bot.command()
-async def kullanıcı(ctx, member: discord.Member=None):
+async def kullanıcı(
+    ctx,
+    member: discord.Member=None
+):
 
     member = member or ctx.author
 
     embed = discord.Embed(
         title=str(member),
-        color=discord.Color.green()
+        color=discord.Color.purple()
     )
 
     embed.add_field(
@@ -432,8 +624,10 @@ async def kullanıcı(ctx, member: discord.Member=None):
     )
 
     embed.add_field(
-        name="Katılım",
-        value=member.joined_at.strftime("%d/%m/%Y")
+        name="Katılım Tarihi",
+        value=member.joined_at.strftime(
+            "%d/%m/%Y"
+        )
     )
 
     embed.set_thumbnail(
@@ -447,7 +641,7 @@ async def botbilgi(ctx):
 
     embed = discord.Embed(
         title="🤖 Bot Bilgisi",
-        color=discord.Color.purple()
+        color=discord.Color.orange()
     )
 
     embed.add_field(
@@ -456,53 +650,16 @@ async def botbilgi(ctx):
     )
 
     embed.add_field(
-        name="Ping",
-        value=f"{round(bot.latency*1000)}ms"
-    )
-
-    embed.add_field(
         name="Sunucu",
         value=len(bot.guilds)
     )
 
+    embed.add_field(
+        name="Ping",
+        value=f"{round(bot.latency*1000)}ms"
+    )
+
     await ctx.send(embed=embed)
-
-# ==================================================
-# EXTRA KOMUTLAR
-# ==================================================
-
-@bot.command()
-async def öp(ctx, member: discord.Member):
-
-    await ctx.send(
-        f"😘 {ctx.author.mention} {member.mention} kişisini öptü."
-    )
-
-@bot.command()
-async def tokat(ctx, member: discord.Member):
-
-    await ctx.send(
-        f"👋 {ctx.author.mention} {member.mention} kişisine tokat attı."
-    )
-
-@bot.command()
-async def hackle(ctx, member: discord.Member):
-
-    messages = [
-        "IP bulunuyor...",
-        "Discord tokeni alınıyor...",
-        "Annesinin kızlık soyadı bulunuyor...",
-        "Minecraft hesabı çalınıyor..."
-    ]
-
-    msg = await ctx.send("Hack başlatıldı...")
-
-    for m in messages:
-        await msg.edit(content=m)
-
-    await msg.edit(
-        content=f"✅ {member.mention} başarıyla hacklendi."
-    )
 
 # ==================================================
 # BOT BASLAT
