@@ -16,45 +16,42 @@ bot = commands.Bot(
     help_command=None
 )
 
-# ==================================================
-# DATA
-# ==================================================
+# =========================
+# DATABASE (WARN)
+# =========================
 
 warnings = {}
 
-# ==================================================
+# =========================
 # READY
-# ==================================================
+# =========================
 
 @bot.event
 async def on_ready():
     print(f"{bot.user} aktif!")
+    await bot.change_presence(activity=discord.Game(".yardım"))
 
-    await bot.change_presence(
-        activity=discord.Game(".yardım")
-    )
-
-# ==================================================
+# =========================
 # ERROR
-# ==================================================
+# =========================
 
 @bot.event
 async def on_command_error(ctx, error):
 
     if isinstance(error, commands.MissingPermissions):
-        return await ctx.send("Yetkin yok.")
+        return await ctx.send("❌ Yetkin yok.")
 
     if isinstance(error, commands.MemberNotFound):
-        return await ctx.send("Üye yok.")
+        return await ctx.send("❌ Üye bulunamadı.")
 
     if isinstance(error, commands.MissingRequiredArgument):
-        return await ctx.send("Eksik bilgi.")
+        return await ctx.send("❌ Eksik bilgi.")
 
     raise error
 
-# ==================================================
-# YETKI KONTROL
-# ==================================================
+# =========================
+# YETKI CHECK
+# =========================
 
 async def can_moderate(ctx, member):
 
@@ -69,9 +66,9 @@ async def can_moderate(ctx, member):
 
     return True
 
-# ==================================================
+# =========================
 # HELP MENU
-# ==================================================
+# =========================
 
 class HelpSelect(Select):
 
@@ -83,32 +80,36 @@ class HelpSelect(Select):
             discord.SelectOption(label="Utility", emoji="⚙️")
         ]
 
-        super().__init__(
-            placeholder="Kategori seç",
-            options=options
-        )
+        super().__init__(placeholder="Kategori seç", options=options)
 
     async def callback(self, interaction):
 
         c = self.values[0]
 
         if c == "Moderasyon":
-            txt = ".ban .kick .mute .warn .nuke .rolver"
+            text = """
+ban, kick, mute, unmute, warn, warns, clear, nuke, rolver, timeout
+"""
+
         elif c == "Eğlence":
-            txt = ".zar .iq .8ball .slot"
+            text = """
+zar, iq, 8ball, slot, ship, öp, tokat, hackle
+"""
+
         else:
-            txt = ".ping .avatar .sunucu"
+            text = """
+ping, avatar, sunucu, kullanıcı, botbilgi
+"""
 
         embed = discord.Embed(
-            title=c,
-            description=txt,
+            title=f"{c} Komutları",
+            description=text,
             color=discord.Color.blurple()
         )
 
         await interaction.response.edit_message(embed=embed)
 
 class HelpView(View):
-
     def __init__(self):
         super().__init__()
         self.add_item(HelpSelect())
@@ -117,47 +118,47 @@ class HelpView(View):
 async def yardım(ctx):
 
     embed = discord.Embed(
-        title="Yardım",
+        title="📚 Yardım Menüsü",
         description="Kategori seç",
         color=discord.Color.green()
     )
 
     await ctx.send(embed=embed, view=HelpView())
 
-# ==================================================
-# MODERASYON
-# ==================================================
+# =========================
+# MODERATION
+# =========================
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
 async def ban(ctx, member: discord.Member, *, reason="yok"):
 
     if not await can_moderate(ctx, member):
-        return await ctx.send("Yapamazsın.")
+        return await ctx.send("❌ Yapamazsın.")
 
     await member.ban(reason=reason)
-    await ctx.send(f"banlandı {member}")
+    await ctx.send(f"🔨 Banlandı: {member}")
 
 @bot.command()
 @commands.has_permissions(kick_members=True)
 async def kick(ctx, member: discord.Member, *, reason="yok"):
 
     if not await can_moderate(ctx, member):
-        return await ctx.send("Yapamazsın.")
+        return await ctx.send("❌ Yapamazsın.")
 
     await member.kick(reason=reason)
-    await ctx.send(f"kick {member}")
+    await ctx.send(f"👢 Kick: {member}")
 
 @bot.command()
 @commands.has_permissions(manage_messages=True)
-async def sil(ctx, amount: int):
+async def clear(ctx, amount: int):
 
     await ctx.channel.purge(limit=amount + 1)
-    await ctx.send("silindi", delete_after=2)
+    await ctx.send(f"🧹 {amount} mesaj silindi", delete_after=2)
 
-# ==================================================
+# =========================
 # MUTE SYSTEM
-# ==================================================
+# =========================
 
 @bot.command()
 @commands.has_permissions(manage_roles=True)
@@ -172,7 +173,7 @@ async def mute(ctx, member: discord.Member):
             await c.set_permissions(role, send_messages=False)
 
     await member.add_roles(role)
-    await ctx.send(f"mute {member}")
+    await ctx.send(f"🔇 mute: {member}")
 
 @bot.command()
 @commands.has_permissions(manage_roles=True)
@@ -183,11 +184,11 @@ async def unmute(ctx, member: discord.Member):
     if role in member.roles:
         await member.remove_roles(role)
 
-    await ctx.send(f"unmute {member}")
+    await ctx.send(f"🔊 unmute: {member}")
 
-# ==================================================
+# =========================
 # WARN SYSTEM
-# ==================================================
+# =========================
 
 @bot.command()
 async def warn(ctx, member: discord.Member, *, reason="yok"):
@@ -197,7 +198,7 @@ async def warn(ctx, member: discord.Member, *, reason="yok"):
 
     warnings[member.id].append(reason)
 
-    await ctx.send(f"warn {member}")
+    await ctx.send(f"⚠️ warn: {member}")
 
 @bot.command()
 async def warns(ctx, member: discord.Member):
@@ -206,9 +207,9 @@ async def warns(ctx, member: discord.Member):
 
     await ctx.send("\n".join(w) if w else "warn yok")
 
-# ==================================================
+# =========================
 # ROLVER (SMART)
-# ==================================================
+# =========================
 
 @bot.command()
 @commands.has_permissions(manage_roles=True)
@@ -219,9 +220,7 @@ async def rolver(ctx, member_or_role=None, *, role_name=None):
 
     if ctx.message.reference:
 
-        msg = await ctx.channel.fetch_message(
-            ctx.message.reference.message_id
-        )
+        msg = await ctx.channel.fetch_message(ctx.message.reference.message_id)
 
         member = msg.author
         query = member_or_role
@@ -229,33 +228,33 @@ async def rolver(ctx, member_or_role=None, *, role_name=None):
     else:
 
         if not ctx.message.mentions:
-            return await ctx.send("kullanıcı yok")
+            return await ctx.send("❌ kullanıcı yok")
 
         member = ctx.message.mentions[0]
         query = role_name
 
     if not query:
-        return await ctx.send("rol yok")
+        return await ctx.send("❌ rol yok")
 
     roles = [r.name for r in ctx.guild.roles]
 
     match = difflib.get_close_matches(query, roles, n=1, cutoff=0.3)
 
     if not match:
-        return await ctx.send("rol bulunamadı")
+        return await ctx.send("❌ rol bulunamadı")
 
     role = discord.utils.get(ctx.guild.roles, name=match[0])
 
     if role >= ctx.author.top_role:
-        return await ctx.send("yetki yok")
+        return await ctx.send("❌ yetki yok")
 
     await member.add_roles(role)
 
-    await ctx.send(f"{member} -> {role}")
+    await ctx.send(f"✅ {member} → {role}")
 
-# ==================================================
+# =========================
 # FUN
-# ==================================================
+# =========================
 
 @bot.command()
 async def zar(ctx):
@@ -265,7 +264,6 @@ async def zar(ctx):
 async def iq(ctx, member: discord.Member=None):
 
     member = member or ctx.author
-
     await ctx.send(random.randint(1,300))
 
 @bot.command(name="8ball")
@@ -276,18 +274,41 @@ async def ball(ctx, *, q):
 async def slot(ctx):
 
     e = ["🍎","🍌","🍇"]
-
     r = [random.choice(e) for _ in range(3)]
 
-    await ctx.send(" ".join(r))
+    await ctx.send(" | ".join(r))
 
-# ==================================================
+@bot.command()
+async def ship(ctx, m1: discord.Member, m2: discord.Member):
+
+    await ctx.send(f"%{random.randint(1,100)} aşk")
+
+@bot.command()
+async def öp(ctx, member: discord.Member):
+    await ctx.send(f"😘 {member} öpüldü")
+
+@bot.command()
+async def tokat(ctx, member: discord.Member):
+    await ctx.send(f"👋 {member} tokatlandı")
+
+@bot.command()
+async def hackle(ctx, member: discord.Member):
+
+    steps = ["IP aranıyor...", "hackleniyor...", "bitiyor..."]
+
+    msg = await ctx.send("başladı")
+
+    for s in steps:
+        await msg.edit(content=s)
+
+    await msg.edit(content=f"{member} hacklendi 💀")
+
+# =========================
 # UTILITY
-# ==================================================
+# =========================
 
 @bot.command()
 async def ping(ctx):
-
     await ctx.send(f"{round(bot.latency*1000)}ms")
 
 @bot.command()
@@ -295,14 +316,39 @@ async def avatar(ctx, member: discord.Member=None):
 
     member = member or ctx.author
 
-    embed = discord.Embed()
-    embed.set_image(url=member.display_avatar.url)
+    e = discord.Embed()
+    e.set_image(url=member.display_avatar.url)
 
-    await ctx.send(embed=embed)
+    await ctx.send(embed=e)
 
-# ==================================================
-# NUKE
-# ==================================================
+@bot.command()
+async def sunucu(ctx):
+
+    g = ctx.guild
+
+    e = discord.Embed(title=g.name)
+    e.add_field(name="Üye", value=g.member_count)
+
+    await ctx.send(embed=e)
+
+@bot.command()
+async def kullanıcı(ctx, member: discord.Member=None):
+
+    member = member or ctx.author
+
+    e = discord.Embed(title=str(member))
+    e.add_field(name="ID", value=member.id)
+
+    await ctx.send(embed=e)
+
+@bot.command()
+async def botbilgi(ctx):
+
+    await ctx.send(f"Guild: {len(bot.guilds)}")
+
+# =========================
+# NUKE (OPSİYONEL)
+# =========================
 
 @bot.command()
 @commands.has_permissions(manage_channels=True)
@@ -312,10 +358,10 @@ async def nuke(ctx):
     new = await ch.clone()
     await ch.delete()
 
-    await new.send("boom")
+    await new.send("💥 reset")
 
-# ==================================================
-# BOT START
-# ==================================================
+# =========================
+# BOT RUN
+# =========================
 
 bot.run(TOKEN)
