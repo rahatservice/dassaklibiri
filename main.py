@@ -342,6 +342,70 @@ async def dmall(ctx, *, mesaj):
         f"✅ Gönderildi: {basarili}\n❌ Gönderilemedi: {basarisiz}"
     )
 @bot.command()
+async def takimlar(ctx):
+
+    TAKIMLAR = {
+        "Arsenal┇⚽": 1500000000000000001,
+        "Bayer Leverkusen┇⚽": 1500000000000000002,
+        "Bayern München┇⚽": 1500000000000000003,
+        "Dortmund┇⚽": 1500000000000000004,
+        "Manchester City┇⚽": 1500000000000000005,
+        "Manchester United┇⚽": 1500000000000000006,
+        "Liverpool┇⚽": 1500000000000000007,
+        "Galatasaray┇⚽": 1500000000000000008,
+        "Fenerbahçe┇⚽": 1500000000000000009,
+        "Trabzonspor┇⚽": 1500000000000000010,
+        "Beşiktaş┇⚽": 1500000000000000011,
+        "Paris-Saint Germain┇⚽": 1500000000000000012,
+        "Napoli FC┇⚽": 1500000000000000013,
+        "Athletic Bilbao┇⚽": 1500000000000000014,
+        "FC Barcelona┇⚽": 1500000000000000015,
+        "Real Madrid┇⚽": 1500000000000000016
+    }
+
+    BASKAN_ROL_ID = 1503341801568866315
+    TD_ROL_ID = 1503341802646802434
+
+    embed = discord.Embed(
+        title="⚽ TAKIM DURUMU",
+        color=discord.Color.gold()
+    )
+
+    for isim, role_id in TAKIMLAR.items():
+
+        role = ctx.guild.get_role(role_id)
+
+        if not role:
+            continue
+
+        baskan_var = False
+        td_var = False
+
+        for u in role.members:
+
+            if any(r.id == BASKAN_ROL_ID for r in u.roles):
+                baskan_var = True
+
+            if any(r.id == TD_ROL_ID for r in u.roles):
+                td_var = True
+
+        if baskan_var and td_var:
+            durum = "🟢 DOLU"
+        elif td_var:
+            durum = "🟡 TD VAR"
+        elif baskan_var:
+            durum = "🟠 BAŞKAN VAR"
+        else:
+            durum = "🔴 BOŞ"
+
+        embed.add_field(
+            name=isim,
+            value=durum,
+            inline=False
+        )
+
+    await ctx.send(embed=embed)
+@bot.command()
 async def kurallar(ctx):
 
     embed = discord.Embed(
