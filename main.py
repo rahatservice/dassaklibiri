@@ -4,7 +4,6 @@ import discord
 
 from collections import defaultdict
 from discord.ext import commands
-from discord.ui import View, Select
 
 TOKEN = os.getenv("TOKEN")
 
@@ -21,15 +20,17 @@ bot = commands.Bot(
 # =========================
 
 oyuncu_deger = defaultdict(lambda: 1)
-kayit_sayisi = defaultdict(int)
+kayit_sayilari = defaultdict(int)
 antrenman = defaultdict(int)
+
+warnings = {}
 
 lig_adi = None
 lig_takimlari = []
 fikstur = []
 
 puan = defaultdict(lambda: {
-    "p":0,"g":0,"b":0,"m":0
+    "p": 0, "g": 0, "b": 0, "m": 0
 })
 
 # =========================
@@ -75,53 +76,31 @@ async def on_message(message):
             oyuncu_deger[message.author.id] += 3
 
             await message.channel.send(
-                f"🔥 {message.author.mention} +3M kazandı"
+                f"🔥 {message.author.mention} +3M aldı"
             )
 
     await bot.process_commands(message)
 
 # =========================
-# KAYIT (.k)
+# KAYIT
 # =========================
 
 @bot.command()
 @commands.has_role(KAYIT_YETKILI)
-async def k(ctx, member: discord.Member, *, veri):
+async def k(ctx, member: discord.Member, *, isim):
 
-    try:
+    await member.edit(nick=isim)
 
-        # format: isim | 1M | 🇪🇸 | SĞK
-        p = [x.strip() for x in veri.split("|")]
+    oyuncu_deger[member.id] = 1
 
-        if len(p) != 4:
-            return await ctx.send(
-                "❌ Format: `isim | 1M | ülke | mevki`"
-            )
+    kayit_sayilari[ctx.author.id] += 1
 
-        isim, deger, ulke, mevki = p
-
-        oyuncu_deger[member.id] = int(
-            deger.upper().replace("M","")
-        )
-
-        await member.edit(
-            nick=f"{isim} | {deger} | {ulke} | {mevki}"
-        )
-
-        kayit_sayisi[ctx.author.id] += 1
-
-        await ctx.send(
-            f"📋 {member.mention} kayıt edildi"
-        )
-
-    except:
-
-        await ctx.send(
-            "❌ Hata oluştu"
-        )
+    await ctx.send(
+        f"📋 {member.mention} → {isim}"
+    )
 
 # =========================
-# DEGER (.dver)
+# DEGER
 # =========================
 
 @bot.command()
@@ -129,16 +108,10 @@ async def k(ctx, member: discord.Member, *, veri):
 async def dver(ctx, member: discord.Member, amount=None):
 
     if amount is None:
-
-        return await ctx.send(
-            f"❌ Kullanım: `.dver {member.mention} 3`"
-        )
+        return await ctx.send("❌ `.dver @kullanıcı 3`")
 
     if not str(amount).isdigit():
-
-        return await ctx.send(
-            "❌ Sadece sayı yaz"
-        )
+        return await ctx.send("❌ sadece sayı")
 
     amount = int(amount)
 
@@ -148,10 +121,6 @@ async def dver(ctx, member: discord.Member, amount=None):
         f"💰 {member.mention} +{amount}M → "
         f"{oyuncu_deger[member.id]}M"
     )
-
-# =========================
-# DEGER AZALT
-# =========================
 
 @bot.command()
 @commands.has_role(DEGER_YETKILI)
@@ -166,10 +135,6 @@ async def dsil(ctx, member: discord.Member, amount: int):
         f"📉 {member.mention} → "
         f"{oyuncu_deger[member.id]}M"
     )
-
-# =========================
-# GOSTER
-# =========================
 
 @bot.command()
 async def dsayi(ctx, member: discord.Member=None):
@@ -192,13 +157,10 @@ async def ara(ctx, *, isim):
 
     for m in ctx.guild.members:
 
-        nick = m.nick or m.name
+        n = m.nick or m.name
 
-        if isim.lower() in nick.lower():
-
-            res.append(
-                f"{m.mention} → {nick}"
-            )
+        if isim.lower() in n.lower():
+            res.append(f"{m.mention} → {n}")
 
     if not res:
         return await ctx.send("Bulunamadı")
@@ -215,9 +177,7 @@ async def ligekle(ctx, *, isim):
     global lig_adi
     lig_adi = isim
 
-    await ctx.send(
-        f"🏆 Lig: {isim}"
-    )
+    await ctx.send(f"🏆 Lig: {isim}")
 
 @bot.command()
 async def ligtakımekle(ctx):
@@ -228,7 +188,6 @@ async def ligtakımekle(ctx):
         return await ctx.send("Takım etiketle")
 
     for r in roles:
-
         if r not in lig_takimlari:
             lig_takimlari.append(r)
 
@@ -244,16 +203,14 @@ async def fiksturolustur(ctx):
 
     for i in range(len(lig_takimlari)):
 
-        for j in range(i+1, len(lig_takimlari)):
+        for j in range(i + 1, len(lig_takimlari)):
 
             fikstur.append({
-
                 "h": hafta,
                 "ev": lig_takimlari[i],
                 "dep": lig_takimlari[j],
                 "s1": random.randint(0,5),
                 "s2": random.randint(0,5)
-
             })
 
             hafta += 1
@@ -263,22 +220,22 @@ async def fiksturolustur(ctx):
 @bot.command()
 async def hafta(ctx, no: int):
 
-    matches = [x for x in fikstur if x["h"] == no]
+    m = [x for x in fikstur if x["h"] == no]
 
-    if not matches:
+    if not m:
         return await ctx.send("Yok")
 
-    text = ""
+    txt = ""
 
-    for m in matches:
+    for x in m:
 
-        text += (
-            f"{m['ev'].mention} "
-            f"{m['s1']} - {m['s2']} "
-            f"{m['dep'].mention}\n"
+        txt += (
+            f"{x['ev'].mention} "
+            f"{x['s1']} - {x['s2']} "
+            f"{x['dep'].mention}\n"
         )
 
-    await ctx.send(text)
+    await ctx.send(txt)
 
 @bot.command()
 async def puan(ctx):
@@ -289,15 +246,15 @@ async def puan(ctx):
         reverse=True
     )
 
-    text = ""
+    txt = ""
 
-    for i,(id,v) in enumerate(s,1):
+    for i, (id, v) in enumerate(s, 1):
 
         r = ctx.guild.get_role(id)
 
-        text += f"{i}. {r.mention} {v['p']}p\n"
+        txt += f"{i}. {r.mention} {v['p']}p\n"
 
-    await ctx.send(text)
+    await ctx.send(txt)
 
 # =========================
 # HELP
@@ -307,15 +264,15 @@ async def puan(ctx):
 async def yardım(ctx):
 
     embed = discord.Embed(
-        title="⚽ BOT MENÜ",
+        title="⚽ BOT",
         description="""
-.k @user isim | 1M | ülke | mevki
+.k @user isim
 .dver @user 3
 .dsil @user 2
 .dsayi @user
-.ara isim
 .ligekle
 .fiksturolustur
+.ara
         """,
         color=discord.Color.green()
     )
