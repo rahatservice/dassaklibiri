@@ -32,6 +32,52 @@ from discord.ext import commands
 def has_deger_yetki(ctx):
     return DEGER_YETKILI in [r.id for r in ctx.author.roles]
 
+def parse_deger(metin):
+    metin = metin.upper().replace(",", "").replace(" ", "")
+    multi = 1
+    if metin.endswith("B"):
+        multi = 1_000_000_000
+        metin = metin[:-1]
+    elif metin.endswith("M"):
+        multi = 1_000_000
+        metin = metin[:-1]
+    elif metin.endswith("K"):
+        multi = 1_000
+        metin = metin[:-1]
+    try:
+        return float(metin) * multi
+    except ValueError:
+        return None
+
+def format_deger(sayi):
+    if sayi >= 1_000_000_000:
+        val = sayi / 1_000_000_000
+        return f"{int(val)}B" if val.is_integer() else f"{val:.1f}B"
+    elif sayi >= 1_000_000:
+        val = sayi / 1_000_000
+        return f"{int(val)}M" if val.is_integer() else f"{val:.1f}M"
+    elif sayi >= 1_000:
+        val = sayi / 1_000
+        return f"{int(val)}K" if val.is_integer() else f"{val:.1f}K"
+    return str(int(sayi))
+
+def deger_isle(isim, miktar_str, islem):
+    parcalar = [p.strip() for p in isim.split("|")]
+    if len(parcalar) < 2:
+        return None, "İsim formatı hatalı! Format: Ad | 1M | ..."
+    mevcut = parse_deger(parcalar[1])
+    if mevcut is None:
+        return None, "Mevcut değer okunamadı!"
+    eklenecek = parse_deger(miktar_str)
+    if eklenecek is None:
+        return None, f"{miktar_str} geçersiz bir değer!"
+    yeni = mevcut + eklenecek if islem == "ekle" else mevcut - eklenecek
+    if yeni < 0:
+        yeni = 0
+    parcalar[1] = format_deger(yeni)
+    islem_str = f"+{miktar_str}" if islem == "ekle" else f"-{miktar_str}"
+    return " | ".join(parcalar), islem_str
+
 # =========================================================
 # DATABASE
 # =========================================================
@@ -761,6 +807,51 @@ class KayitSelect(discord.ui.Select):
             placeholder="Rol seç...",
             options=options
         )
+
+    @bot.command(name="dver")
+async def dver(ctx, uye: discord.Member, miktar: str, *, sebep: str = "Belirtilmedi"):
+    try:
+        if not deger_yetkisi_var_mi(ctx.author):
+            return await ctx.send(embed=hata_embed("Bu komutu kullanmak için **Değer Yetkilisi** rolüne sahip olmalısın!"))
+        
+        mevcut_isim = uye.display_name
+        yeni_isim, islem_detay = deger_isle(mevcut_isim, miktar, "ekle")
+        
+        if yeni_isim is None:
+            return await ctx.send(embed=hata_embed(islem_detay))
+            
+        await uye.edit(nick=yeni_isim)
+        
+        # Loglama ve Sayaç
+        deger_sayaci[ctx.author.id] = deger_sayaci.get(ctx.author.id, 0) + 1
+        parcalar = yeni_isim.split("|")
+        yeni_deger = parcalar[1].strip()
+        
+        await ctx.send(embed=basari_embed(f"**{uye.mention}** değeri güncellendi: {islem_detay}\n📝 Yeni isim: {yeni_isim}"))
+        await log_deger_gonder(ctx.guild, ctx.author, uye, "Eski Değer", yeni_deger, "➕ Değer Eklendi", sebep)
+    except Exception as e:
+        await ctx.send(embed=hata_embed(f"Hata: {e}"))
+
+@bot.command(name="dsil")
+async def dsil(ctx, uye: discord.Member, miktar: str = None, *, sebep: str = "Belirtilmedi"):
+    try:
+        if not deger_yetkisi_var_mi(ctx.author):
+            return await ctx.send(embed=hata_embed("Bu komutu kullanmak için **Değer Yetkilisi** rolüne sahip olmalısın!"))
+            
+        mevcut_isim = uye.display_name
+        if miktar is None: # Miktar girilmezse sıfırlar
+            parcalar = mevcut_isim.split("|")
+            parcalar[1] = "0M"
+            yeni_isim = " | ".join(parcalar)
+            await uye.edit(nick=yeni_isim)
+            await ctx.send(embed=basari_embed(f"**{uye.mention}** değeri sıfırlandı."))
+            return
+
+        yeni_isim, islem_detay = deger_isle(mevcut_isim, miktar, "çıkar")
+        await uye.edit(nick=yeni_isim)
+        await ctx.send(embed=basari_embed(f"**{uye.mention}** değeri düşürüldü: {islem_detay}"))
+    except Exception as e:
+        await ctx.send(embed=hata_embed(f"Hata: {e}"))
 
     async def callback(self, interaction):
 
