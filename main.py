@@ -809,7 +809,7 @@ class KayitSelect(discord.ui.Select):
         )
 
     @bot.command(name="dver")
-async def dver(ctx, uye: discord.Member, miktar: str, *, sebep: str = "Belirtilmedi"):
+   async def dver(ctx, uye: discord.Member, miktar: str, *, sebep: str = "Belirtilmedi"):
     try:
         if not deger_yetkisi_var_mi(ctx.author):
             return await ctx.send(embed=hata_embed("Bu komutu kullanmak için **Değer Yetkilisi** rolüne sahip olmalısın!"))
@@ -822,10 +822,7 @@ async def dver(ctx, uye: discord.Member, miktar: str, *, sebep: str = "Belirtilm
             
         await uye.edit(nick=yeni_isim)
         
-        # Loglama ve Sayaç
-        deger_sayaci[ctx.author.id] = deger_sayaci.get(ctx.author.id, 0) + 1
-        parcalar = yeni_isim.split("|")
-        yeni_deger = parcalar[1].strip()
+        
         
         await ctx.send(embed=basari_embed(f"**{uye.mention}** değeri güncellendi: {islem_detay}\n📝 Yeni isim: {yeni_isim}"))
         await log_deger_gonder(ctx.guild, ctx.author, uye, "Eski Değer", yeni_deger, "➕ Değer Eklendi", sebep)
