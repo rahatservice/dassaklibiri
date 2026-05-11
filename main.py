@@ -421,8 +421,6 @@ async def şart(ctx):
     await ctx.send(embed=embed)
 
     
-
-    await ctx.send(embed=embed)
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def title(ctx, title, *, mesaj):
