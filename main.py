@@ -304,7 +304,7 @@ async def yardım(ctx):
         view=HelpView()
     )
 @bot.command()
-@commands.has_permissions(manage_messages=True)
+@commands.has_permissions(administrator=True)
 async def duyuruyap(ctx, *, mesaj):
 
     embed = discord.Embed(
@@ -332,15 +332,10 @@ async def dmall(ctx, *, mesaj):
             continue
 
         try:
-
-            await member.send(
-                f"📢 Sunucu mesajı:\n\n{mesaj}"
-            )
-
+            await member.send(f"📢 Sunucu mesajı:\n\n{mesaj}")
             basarili += 1
 
         except:
-
             basarisiz += 1
 
     await ctx.send(
