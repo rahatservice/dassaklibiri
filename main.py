@@ -936,33 +936,65 @@ async def skor(
 @bot.command()
 async def puan(ctx):
 
+    if len(lig_takimlari) == 0:
+        return await ctx.send("Lig yok.")
+
+    # Her takımı garanti listeye sok
+    for role in lig_takimlari:
+
+        if role.id not in puan_durumu:
+            puan_durumu[role.id]  # otomatik 0 başlatır
+
     siralama = sorted(
-        puan_durumu.items(),
-        key=lambda x: x[1]["puan"],
+        lig_takimlari,
+        key=lambda r: puan_durumu[r.id]["puan"],
         reverse=True
     )
 
     text = ""
 
-    for i, (team_id, stats) in enumerate(
-        siralama,
-        start=1
-    ):
+    for i, role in enumerate(siralama, start=1):
 
-        role = ctx.guild.get_role(team_id)
+        stats = puan_durumu[role.id]
 
         text += (
             f"{i}. {role.mention}\n"
-            f"P: {stats['puan']} | "
-            f"G: {stats['galibiyet']} | "
-            f"B: {stats['beraberlik']} | "
-            f"M: {stats['maglubiyet']}\n\n"
+            f"🏆 Puan: {stats['puan']}\n"
+            f"⚽ O: {stats['oynanan']} G:{stats['galibiyet']} B:{stats['beraberlik']} M:{stats['maglubiyet']}\n\n"
         )
 
     embed = discord.Embed(
-        title=f"🏆 {lig_adi}",
+        title=f"🏆 {lig_adi or 'Lig'} Puan Tablosu",
         description=text,
         color=discord.Color.gold()
+    )
+
+    await ctx.send(embed=embed)
+@bot.command()
+async def macsonuclari(ctx):
+
+    if len(fikstur) == 0:
+        return await ctx.send("Fikstür yok.")
+
+    text = ""
+
+    for m in fikstur:
+
+        ev = m["ev"]
+        dep = m["dep"]
+
+        if m["s1"] is None:
+
+            text += f"⏳ {ev.mention} vs {dep.mention} (Oynanmadı)\n"
+
+        else:
+
+            text += f"✅ {ev.mention} {m['s1']} - {m['s2']} {dep.mention}\n"
+
+    embed = discord.Embed(
+        title="📊 Tüm Maçlar",
+        description=text,
+        color=discord.Color.blurple()
     )
 
     await ctx.send(embed=embed)
