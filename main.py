@@ -4,6 +4,7 @@ import discord
 
 from collections import defaultdict
 from discord.ext import commands
+from discord.ui import View, Select
 
 TOKEN = os.getenv("TOKEN")
 
@@ -25,12 +26,13 @@ antrenman = defaultdict(int)
 
 warnings = {}
 
+# LIG
 lig_adi = None
 lig_takimlari = []
 fikstur = []
 
 puan = defaultdict(lambda: {
-    "p": 0, "g": 0, "b": 0, "m": 0
+    "p":0,"g":0,"b":0,"m":0
 })
 
 # =========================
@@ -62,12 +64,13 @@ async def on_message(message):
     if message.channel.id == ANTRENMAN_KANAL:
 
         antrenman[message.author.id] += 1
+
         s = antrenman[message.author.id]
 
         if s < 5:
 
             await message.channel.send(
-                f"🏋️ {message.author.mention} {s}/5 antrenman"
+                f"🏋️ {s}/5 antrenman"
             )
 
         else:
@@ -76,7 +79,7 @@ async def on_message(message):
             oyuncu_deger[message.author.id] += 3
 
             await message.channel.send(
-                f"🔥 {message.author.mention} +3M aldı"
+                f"🔥 +3M verildi"
             )
 
     await bot.process_commands(message)
@@ -93,8 +96,6 @@ async def k(ctx, member: discord.Member, *, isim):
 
     oyuncu_deger[member.id] = 1
 
-    kayit_sayilari[ctx.author.id] += 1
-
     await ctx.send(
         f"📋 {member.mention} → {isim}"
     )
@@ -108,18 +109,23 @@ async def k(ctx, member: discord.Member, *, isim):
 async def dver(ctx, member: discord.Member, amount=None):
 
     if amount is None:
-        return await ctx.send("❌ `.dver @kullanıcı 3`")
+
+        return await ctx.send(
+            "❌ Kullanım: `.dver @kullanıcı 3`"
+        )
 
     if not str(amount).isdigit():
-        return await ctx.send("❌ sadece sayı")
+
+        return await ctx.send(
+            "❌ Sadece sayı yaz"
+        )
 
     amount = int(amount)
 
     oyuncu_deger[member.id] += amount
 
     await ctx.send(
-        f"💰 {member.mention} +{amount}M → "
-        f"{oyuncu_deger[member.id]}M"
+        f"💰 +{amount}M → {oyuncu_deger[member.id]}M"
     )
 
 @bot.command()
@@ -132,8 +138,7 @@ async def dsil(ctx, member: discord.Member, amount: int):
     )
 
     await ctx.send(
-        f"📉 {member.mention} → "
-        f"{oyuncu_deger[member.id]}M"
+        f"📉 {oyuncu_deger[member.id]}M"
     )
 
 @bot.command()
@@ -142,8 +147,7 @@ async def dsayi(ctx, member: discord.Member=None):
     member = member or ctx.author
 
     await ctx.send(
-        f"💰 {member.mention} → "
-        f"{oyuncu_deger[member.id]}M"
+        f"💰 {oyuncu_deger[member.id]}M"
     )
 
 # =========================
@@ -160,6 +164,7 @@ async def ara(ctx, *, isim):
         n = m.nick or m.name
 
         if isim.lower() in n.lower():
+
             res.append(f"{m.mention} → {n}")
 
     if not res:
@@ -184,10 +189,8 @@ async def ligtakımekle(ctx):
 
     roles = ctx.message.role_mentions
 
-    if not roles:
-        return await ctx.send("Takım etiketle")
-
     for r in roles:
+
         if r not in lig_takimlari:
             lig_takimlari.append(r)
 
@@ -203,7 +206,7 @@ async def fiksturolustur(ctx):
 
     for i in range(len(lig_takimlari)):
 
-        for j in range(i + 1, len(lig_takimlari)):
+        for j in range(i+1, len(lig_takimlari)):
 
             fikstur.append({
                 "h": hafta,
@@ -215,7 +218,7 @@ async def fiksturolustur(ctx):
 
             hafta += 1
 
-    await ctx.send("📅 Fikstür hazır")
+    await ctx.send("Fikstür hazır")
 
 @bot.command()
 async def hafta(ctx, no: int):
@@ -231,7 +234,7 @@ async def hafta(ctx, no: int):
 
         txt += (
             f"{x['ev'].mention} "
-            f"{x['s1']} - {x['s2']} "
+            f"{x['s1']}-{x['s2']} "
             f"{x['dep'].mention}\n"
         )
 
@@ -248,7 +251,7 @@ async def puan(ctx):
 
     txt = ""
 
-    for i, (id, v) in enumerate(s, 1):
+    for i,(id,v) in enumerate(s,1):
 
         r = ctx.guild.get_role(id)
 
@@ -264,12 +267,12 @@ async def puan(ctx):
 async def yardım(ctx):
 
     embed = discord.Embed(
-        title="⚽ BOT",
+        title="⚽ BOT MENÜ",
         description="""
-.k @user isim
-.dver @user 3
-.dsil @user 2
-.dsayi @user
+.k
+.dver
+.dsil
+.dsayi
 .ligekle
 .fiksturolustur
 .ara
