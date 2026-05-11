@@ -286,6 +286,7 @@ class HelpView(View):
             HelpSelect()
         )
 
+
 @bot.command()
 async def yardım(ctx):
 
@@ -302,7 +303,49 @@ async def yardım(ctx):
         embed=embed,
         view=HelpView()
     )
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def duyuruyap(ctx, *, mesaj):
 
+    embed = discord.Embed(
+        title="📢 DUYURU",
+        description=mesaj,
+        color=discord.Color.red()
+    )
+
+    embed.set_footer(text=f"Duyuru yapan: {ctx.author}")
+
+    await ctx.send(embed=embed)
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def dmall(ctx, *, mesaj):
+
+    await ctx.send("📨 DM gönderimi başlatıldı...")
+
+    basarili = 0
+    basarisiz = 0
+
+    for member in ctx.guild.members:
+
+        if member.bot:
+            continue
+
+        try:
+
+            await member.send(
+                f"📢 Sunucu mesajı:\n\n{mesaj}"
+            )
+
+            basarili += 1
+
+        except:
+
+            basarisiz += 1
+
+    await ctx.send(
+        f"✅ Gönderildi: {basarili}\n❌ Gönderilemedi: {basarisiz}"
+    )
 # =========================================================
 # MODERASYON
 # =========================================================
