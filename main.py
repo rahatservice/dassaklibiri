@@ -768,45 +768,7 @@ async def rolal(
 # KAYIT SISTEMI
 # =========================================================
 
-class KayitSelect(discord.ui.Select):
 
-    def __init__(self, uye):
-
-        self.uye = uye
-
-        options = [
-
-            discord.SelectOption(
-                label="Teknik Direktör",
-                emoji="💼"
-            ),
-
-            discord.SelectOption(
-                label="Üye",
-                emoji="👤"
-            ),
-
-            discord.SelectOption(
-                label="Bayan Üye",
-                emoji="🎀"
-            ),
-
-            discord.SelectOption(
-                label="Başkan",
-                emoji="🤵🏻‍♂️"
-            ),
-
-            discord.SelectOption(
-                label="Futbolcu",
-                emoji="🧩"
-            )
-
-        ]
-
-        super().__init__(
-            placeholder="Rol seç...",
-            options=options
-        )
 
     @bot.command(name="dver")
    async def dver(ctx, uye: discord.Member, miktar: str, *, sebep: str = "Belirtilmedi"):
