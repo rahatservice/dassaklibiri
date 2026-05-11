@@ -352,7 +352,7 @@ async def title(ctx, title, *, mesaj):
         color=discord.Color.blue()
     )
 
-    embed.set_footer(text=f"{ctx.author}")
+    
 
     await ctx.send(embed=embed)
 @bot.command()
