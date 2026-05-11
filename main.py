@@ -309,7 +309,7 @@ async def yardım(ctx):
 async def duyuruyap(ctx, *, mesaj):
 
     embed = discord.Embed(
-        title="ÖNEMLİ",
+        title="ROL ALMA",
         description=mesaj,
         color=discord.Color.red()
     )
