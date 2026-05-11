@@ -343,6 +343,19 @@ async def dmall(ctx, *, mesaj):
         f"✅ Gönderildi: {basarili}\n❌ Gönderilemedi: {basarisiz}"
     )
 @bot.command()
+@commands.has_permissions(administrator=True)
+async def title(ctx, title, *, mesaj):
+
+    embed = discord.Embed(
+        title=title,
+        description=mesaj,
+        color=discord.Color.blue()
+    )
+
+    embed.set_footer(text=f"{ctx.author}")
+
+    await ctx.send(embed=embed)
+@bot.command()
 async def takimlar(ctx):
 
     await ctx.guild.chunk()
