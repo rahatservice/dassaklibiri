@@ -343,6 +343,32 @@ async def dmall(ctx, *, mesaj):
         f"✅ Gönderildi: {basarili}\n❌ Gönderilemedi: {basarisiz}"
     )
 @bot.command()
+async def şart(ctx, channel_id: int):
+
+    if ctx.channel.id != channel_id:
+        return await ctx.send("Bu komut burada kullanılamaz.")
+
+    embed = discord.Embed(
+        title="📜 SUNUCU KATILIM ŞARTLARI",
+        description=(
+            "Sunucuya tam erişim için aşağıdaki adımları tamamlaman gerekiyor:\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🏷️ **1. Rol Al**\n"
+            f"<#1503342044834168914> kanalından **2 rol al**\n\n"
+            "🗳️ **2. Oy Ver**\n"
+            f"<#1503342033526456431> kanalında **oy ver**\n\n"
+            "✔️ **3. Kalıcı Tik**\n"
+            f"<#1503342039889088622> kanalındaki **tik butonuna tıkla**\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "⚠️ Bu adımlar tamamlanmadan kayıt edilmez."
+        ),
+        color=discord.Color.green()
+    )
+
+    
+
+    await ctx.send(embed=embed)
+@bot.command()
 @commands.has_permissions(administrator=True)
 async def title(ctx, title, *, mesaj):
 
