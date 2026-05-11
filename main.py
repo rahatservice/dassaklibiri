@@ -1,3 +1,9 @@
+# =========================================================
+# NOVA FOOTBALL ROLEPLAY BOT
+# Prefix: .
+# TOKEN environment variable kullanır
+# =========================================================
+
 import os
 import random
 import difflib
@@ -17,24 +23,46 @@ bot = commands.Bot(
     help_command=None
 )
 
-# ==================================================
+# =========================================================
 # DATABASE
-# ==================================================
+# =========================================================
 
 warnings = {}
 
 kayit_sayilari = defaultdict(int)
-deger_sayilari = defaultdict(int)
 
 oyuncu_deger = defaultdict(lambda: 1)
 
 antrenman_sayisi = defaultdict(int)
 
-# ==================================================
+# =========================================================
+# LIG DATABASE
+# =========================================================
+
+lig_adi = None
+
+lig_takimlari = []
+
+fikstur = []
+
+puan_durumu = defaultdict(
+    lambda: {
+        "puan": 0,
+        "oynanan": 0,
+        "galibiyet": 0,
+        "beraberlik": 0,
+        "maglubiyet": 0,
+        "atilan": 0,
+        "yenilen": 0
+    }
+)
+
+# =========================================================
 # IDS
-# ==================================================
+# =========================================================
 
 KAYIT_YETKILI = 1503341765178953739
+
 DEGER_YETKILI = 1503341767049740369
 
 ANTRENMAN_KANAL = 1503342068821655653
@@ -49,9 +77,9 @@ ROLLER = {
 
 }
 
-# ==================================================
+# =========================================================
 # READY
-# ==================================================
+# =========================================================
 
 @bot.event
 async def on_ready():
@@ -62,9 +90,9 @@ async def on_ready():
         activity=discord.Game(".yardım")
     )
 
-# ==================================================
-# ANTRENMAN SISTEMI
-# ==================================================
+# =========================================================
+# ANTRENMAN
+# =========================================================
 
 @bot.event
 async def on_message(message):
@@ -82,7 +110,7 @@ async def on_message(message):
 
             embed = discord.Embed(
                 title="🏋️ Antrenman Yapıldı",
-                description=f"`{sayi}/5` tamamlandı.",
+                description=f"{sayi}/5 tamamlandı.",
                 color=discord.Color.orange()
             )
 
@@ -106,21 +134,15 @@ async def on_message(message):
                 ulke = parts[2].strip()
                 mevki = parts[3].strip()
 
-                yeni_deger = (
-                    f"{oyuncu_deger[member.id]}M"
-                )
-
-                yeni_nick = (
-                    f"{isim} | "
-                    f"{yeni_deger} | "
-                    f"{ulke} | "
-                    f"{mevki}"
-                )
-
                 try:
 
                     await member.edit(
-                        nick=yeni_nick
+                        nick=(
+                            f"{isim} | "
+                            f"{oyuncu_deger[member.id]}M | "
+                            f"{ulke} | "
+                            f"{mevki}"
+                        )
                     )
 
                 except:
@@ -129,56 +151,20 @@ async def on_message(message):
             embed = discord.Embed(
                 title="🔥 Antrenman Tamamlandı",
                 description=(
-                    f"{member.mention} oyuncusuna "
-                    f"`+3M` eklendi.\n\n"
+                    f"{member.mention} +3M aldı.\n"
                     f"Yeni değer: "
-                    f"`{oyuncu_deger[member.id]}M`"
+                    f"{oyuncu_deger[member.id]}M"
                 ),
                 color=discord.Color.green()
             )
 
-            await message.channel.send(
-                embed=embed
-            )
+            await message.channel.send(embed=embed)
 
     await bot.process_commands(message)
 
-# ==================================================
-# ERROR
-# ==================================================
-
-@bot.event
-async def on_command_error(ctx, error):
-
-    if isinstance(error, commands.MissingPermissions):
-        return await ctx.send("❌ Yetkin yok.")
-
-    if isinstance(error, commands.MemberNotFound):
-        return await ctx.send("❌ Kullanıcı bulunamadı.")
-
-    if isinstance(error, commands.MissingRequiredArgument):
-        return await ctx.send("❌ Eksik argüman.")
-
-# ==================================================
-# YETKI CHECK
-# ==================================================
-
-async def can_moderate(ctx, member):
-
-    if member == ctx.author:
-        return False
-
-    if member.top_role >= ctx.author.top_role:
-        return False
-
-    if member.top_role >= ctx.guild.me.top_role:
-        return False
-
-    return True
-
-# ==================================================
+# =========================================================
 # HELP MENU
-# ==================================================
+# =========================================================
 
 class HelpSelect(Select):
 
@@ -197,8 +183,8 @@ class HelpSelect(Select):
             ),
 
             discord.SelectOption(
-                label="Değer",
-                emoji="💰"
+                label="Lig",
+                emoji="🏆"
             ),
 
             discord.SelectOption(
@@ -210,6 +196,7 @@ class HelpSelect(Select):
                 label="Utility",
                 emoji="⚙️"
             )
+
         ]
 
         super().__init__(
@@ -219,9 +206,9 @@ class HelpSelect(Select):
 
     async def callback(self, interaction):
 
-        c = self.values[0]
+        secim = self.values[0]
 
-        if c == "Moderasyon":
+        if secim == "Moderasyon":
 
             text = """
 `.ban`
@@ -233,33 +220,31 @@ class HelpSelect(Select):
 `.warns`
 `.rolver`
 `.rolal`
-`.nuke`
 """
 
-            color = discord.Color.red()
-
-        elif c == "Kayıt":
+        elif secim == "Kayıt":
 
             text = """
 `.k`
 `.kayitsayi`
 `.kayittop`
-"""
-
-            color = discord.Color.blurple()
-
-        elif c == "Değer":
-
-            text = """
 `.dver`
 `.dsil`
 `.dsayi`
 `.dtop`
 """
 
-            color = discord.Color.gold()
+        elif secim == "Lig":
 
-        elif c == "Eğlence":
+            text = """
+`.ligekle`
+`.ligtakımekle`
+`.fiksturolustur`
+`.hafta`
+`.puan`
+"""
+
+        elif secim == "Eğlence":
 
             text = """
 `.zar`
@@ -269,10 +254,7 @@ class HelpSelect(Select):
 `.ship`
 `.öp`
 `.tokat`
-`.hackle`
 """
-
-            color = discord.Color.purple()
 
         else:
 
@@ -280,20 +262,13 @@ class HelpSelect(Select):
 `.ping`
 `.avatar`
 `.sunucu`
-`.kullanıcı`
-`.botbilgi`
+`.ara`
 """
 
-            color = discord.Color.green()
-
         embed = discord.Embed(
-            title=f"{c} Komutları",
+            title=f"{secim} Komutları",
             description=text,
-            color=color
-        )
-
-        embed.set_footer(
-            text="Prefix: ."
+            color=discord.Color.blurple()
         )
 
         await interaction.response.edit_message(
@@ -304,28 +279,22 @@ class HelpView(View):
 
     def __init__(self):
 
-        super().__init__(timeout=None)
+        super().__init__()
 
-        self.add_item(HelpSelect())
+        self.add_item(
+            HelpSelect()
+        )
 
 @bot.command()
 async def yardım(ctx):
 
     embed = discord.Embed(
-        title="🤖 Yardım Menüsü",
+        title="🤖 NOVA BOT",
         description=(
-            "Kategori seç.\n\n"
-            "🛡️ Moderasyon\n"
-            "📋 Kayıt\n"
-            "💰 Değer\n"
-            "🎮 Eğlence\n"
-            "⚙️ Utility"
+            "Kategori seç.\n"
+            "Futbol RP evrenine hoş geldin."
         ),
         color=discord.Color.blurple()
-    )
-
-    embed.set_thumbnail(
-        url=bot.user.display_avatar.url
     )
 
     await ctx.send(
@@ -333,35 +302,44 @@ async def yardım(ctx):
         view=HelpView()
     )
 
-# ==================================================
+# =========================================================
 # MODERASYON
-# ==================================================
+# =========================================================
+
+async def can_moderate(ctx, member):
+
+    if member == ctx.author:
+        return False
+
+    if member.top_role >= ctx.author.top_role:
+        return False
+
+    if member.top_role >= ctx.guild.me.top_role:
+        return False
+
+    return True
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member, *, reason="Sebep yok"):
+async def ban(ctx, member: discord.Member):
 
     if not await can_moderate(ctx, member):
-        return await ctx.send("❌ Yapamazsın.")
+        return await ctx.send("Yetki yetersiz.")
 
-    await member.ban(reason=reason)
+    await member.ban()
 
-    await ctx.send(
-        f"🔨 {member} banlandı."
-    )
+    await ctx.send(f"{member} banlandı.")
 
 @bot.command()
 @commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member, *, reason="Sebep yok"):
+async def kick(ctx, member: discord.Member):
 
     if not await can_moderate(ctx, member):
-        return await ctx.send("❌ Yapamazsın.")
+        return await ctx.send("Yetki yetersiz.")
 
-    await member.kick(reason=reason)
+    await member.kick()
 
-    await ctx.send(
-        f"👢 {member} kicklendi."
-    )
+    await ctx.send(f"{member} kicklendi.")
 
 @bot.command()
 @commands.has_permissions(manage_messages=True)
@@ -371,10 +349,38 @@ async def clear(ctx, amount: int):
         limit=amount + 1
     )
 
-    await ctx.send(
-        f"🧹 {amount} mesaj silindi.",
-        delete_after=3
+    msg = await ctx.send(
+        f"{amount} mesaj silindi."
     )
+
+    await msg.delete(delay=3)
+
+@bot.command()
+async def warn(
+    ctx,
+    member: discord.Member,
+    *,
+    reason="Sebep yok"
+):
+
+    if member.id not in warnings:
+        warnings[member.id] = []
+
+    warnings[member.id].append(reason)
+
+    await ctx.send(
+        f"{member} warn aldı."
+    )
+
+@bot.command()
+async def warns(ctx, member: discord.Member):
+
+    w = warnings.get(member.id, [])
+
+    if not w:
+        return await ctx.send("Warn yok.")
+
+    await ctx.send("\n".join(w))
 
 @bot.command()
 @commands.has_permissions(manage_roles=True)
@@ -400,9 +406,7 @@ async def mute(ctx, member: discord.Member):
 
     await member.add_roles(role)
 
-    await ctx.send(
-        f"🔇 {member} susturuldu."
-    )
+    await ctx.send("Susturuldu.")
 
 @bot.command()
 @commands.has_permissions(manage_roles=True)
@@ -413,57 +417,22 @@ async def unmute(ctx, member: discord.Member):
         name="Muted"
     )
 
-    if role in member.roles:
+    await member.remove_roles(role)
 
-        await member.remove_roles(role)
+    await ctx.send("Susturma kaldırıldı.")
 
-    await ctx.send(
-        f"🔊 {member} susturması kaldırıldı."
-    )
-
-@bot.command()
-async def warn(ctx, member: discord.Member, *, reason="Sebep yok"):
-
-    if member.id not in warnings:
-        warnings[member.id] = []
-
-    warnings[member.id].append(reason)
-
-    await ctx.send(
-        f"⚠️ {member} warn aldı."
-    )
-
-@bot.command()
-async def warns(ctx, member: discord.Member):
-
-    w = warnings.get(member.id, [])
-
-    if not w:
-        return await ctx.send("Warn yok.")
-
-    await ctx.send("\n".join(w))
-
-@bot.command()
-@commands.has_permissions(manage_channels=True)
-async def nuke(ctx):
-
-    channel = ctx.channel
-
-    new = await channel.clone()
-
-    await channel.delete()
-
-    await new.send(
-        "💥 Kanal resetlendi."
-    )
-
-# ==================================================
+# =========================================================
 # SMART ROLVER
-# ==================================================
+# =========================================================
 
 @bot.command()
 @commands.has_permissions(manage_roles=True)
-async def rolver(ctx, member_or_role=None, *, role_name=None):
+async def rolver(
+    ctx,
+    member_or_role=None,
+    *,
+    role_name=None
+):
 
     member = None
     query = None
@@ -482,7 +451,7 @@ async def rolver(ctx, member_or_role=None, *, role_name=None):
 
         if not ctx.message.mentions:
             return await ctx.send(
-                "❌ Kullanıcı etiketle."
+                "Kullanıcı etiketle."
             )
 
         member = ctx.message.mentions[0]
@@ -491,7 +460,7 @@ async def rolver(ctx, member_or_role=None, *, role_name=None):
 
     if not query:
         return await ctx.send(
-            "❌ Rol belirt."
+            "Rol belirt."
         )
 
     role_names = [
@@ -507,7 +476,7 @@ async def rolver(ctx, member_or_role=None, *, role_name=None):
 
     if not closest:
         return await ctx.send(
-            "❌ Rol bulunamadı."
+            "Rol bulunamadı."
         )
 
     role = discord.utils.get(
@@ -515,15 +484,10 @@ async def rolver(ctx, member_or_role=None, *, role_name=None):
         name=closest[0]
     )
 
-    if role >= ctx.author.top_role:
-        return await ctx.send(
-            "❌ Yetki yok."
-        )
-
     await member.add_roles(role)
 
     await ctx.send(
-        f"✅ {member.mention} → {role.mention}"
+        f"{member.mention} → {role.mention}"
     )
 
 @bot.command()
@@ -537,13 +501,11 @@ async def rolal(
 
     await member.remove_roles(role)
 
-    await ctx.send(
-        f"❌ {role.name} alındı."
-    )
+    await ctx.send("Rol alındı.")
 
-# ==================================================
+# =========================================================
 # KAYIT SISTEMI
-# ==================================================
+# =========================================================
 
 class KayitSelect(discord.ui.Select):
 
@@ -577,6 +539,7 @@ class KayitSelect(discord.ui.Select):
                 label="Futbolcu",
                 emoji="🧩"
             )
+
         ]
 
         super().__init__(
@@ -603,8 +566,8 @@ class KayitSelect(discord.ui.Select):
         embed = discord.Embed(
             title="✅ Kayıt Yapıldı",
             description=(
-                f"{self.uye.mention} kişisine "
-                f"{role.mention} verildi."
+                f"{self.uye.mention} → "
+                f"{role.mention}"
             ),
             color=discord.Color.green()
         )
@@ -614,13 +577,15 @@ class KayitSelect(discord.ui.Select):
             view=None
         )
 
-class KayitView(discord.ui.View):
+class KayitView(View):
 
     def __init__(self, uye):
 
         super().__init__(timeout=60)
 
-        self.add_item(KayitSelect(uye))
+        self.add_item(
+            KayitSelect(uye)
+        )
 
 @bot.command()
 @commands.has_role(KAYIT_YETKILI)
@@ -633,22 +598,37 @@ async def k(
     mevki
 ):
 
-    oyuncu_deger[member.id] = int(
-        deger.replace("M", "")
-    )
+    try:
+
+        temiz = int(
+            deger.upper().replace("M", "")
+        )
+
+    except:
+
+        return await ctx.send(
+            "Örnek değer: 5M"
+        )
+
+    oyuncu_deger[member.id] = temiz
 
     await member.edit(
-        nick=f"{isim} | {deger} | {ulke} | {mevki}"
+        nick=(
+            f"{isim} | "
+            f"{deger.upper()} | "
+            f"{ulke} | "
+            f"{mevki}"
+        )
     )
 
     embed = discord.Embed(
         title="📋 Kayıt Paneli",
         description=(
-            f"Kullanıcı: {member.mention}\n"
-            f"İsim: {isim}\n"
-            f"Değer: {deger}\n"
-            f"Ülke: {ulke}\n"
-            f"Mevki: {mevki}"
+            f"👤 {member.mention}\n"
+            f"🧩 {isim}\n"
+            f"💰 {deger.upper()}\n"
+            f"🌍 {ulke}\n"
+            f"⚽ {mevki}"
         ),
         color=discord.Color.blurple()
     )
@@ -666,17 +646,13 @@ async def kayitsayi(
 
     member = member or ctx.author
 
-    sayi = kayit_sayilari[member.id]
-
     await ctx.send(
-        f"📋 {member.mention} kayıt sayısı: `{sayi}`"
+        f"Kayıt sayısı: "
+        f"{kayit_sayilari[member.id]}"
     )
 
 @bot.command()
 async def kayittop(ctx):
-
-    if not kayit_sayilari:
-        return await ctx.send("Veri yok.")
 
     sorted_users = sorted(
         kayit_sayilari.items(),
@@ -686,15 +662,16 @@ async def kayittop(ctx):
 
     text = ""
 
-    for i, (user_id, amount) in enumerate(
+    for i, (uid, amount) in enumerate(
         sorted_users[:10],
         start=1
     ):
 
-        user = bot.get_user(user_id)
+        user = bot.get_user(uid)
 
         text += (
-            f"{i}. {user} → `{amount}` kayıt\n"
+            f"{i}. {user} → "
+            f"{amount}\n"
         )
 
     embed = discord.Embed(
@@ -705,9 +682,9 @@ async def kayittop(ctx):
 
     await ctx.send(embed=embed)
 
-# ==================================================
+# =========================================================
 # DEGER SISTEMI
-# ==================================================
+# =========================================================
 
 @bot.command()
 @commands.has_role(DEGER_YETKILI)
@@ -719,10 +696,6 @@ async def dver(
 
     oyuncu_deger[member.id] += amount
 
-    deger_sayilari[
-        ctx.author.id
-    ] += amount
-
     nick = member.nick
 
     if nick and "|" in nick:
@@ -745,8 +718,8 @@ async def dver(
             )
 
     await ctx.send(
-        f"💰 Yeni değer: "
-        f"`{oyuncu_deger[member.id]}M`"
+        f"Yeni değer: "
+        f"{oyuncu_deger[member.id]}M"
     )
 
 @bot.command()
@@ -758,7 +731,6 @@ async def dsil(
 ):
 
     if oyuncu_deger[member.id] <= 1:
-
         return await ctx.send(
             "1M altına düşemez."
         )
@@ -768,30 +740,9 @@ async def dsil(
     if oyuncu_deger[member.id] < 1:
         oyuncu_deger[member.id] = 1
 
-    nick = member.nick
-
-    if nick and "|" in nick:
-
-        parts = nick.split("|")
-
-        if len(parts) >= 4:
-
-            isim = parts[0].strip()
-            ulke = parts[2].strip()
-            mevki = parts[3].strip()
-
-            await member.edit(
-                nick=(
-                    f"{isim} | "
-                    f"{oyuncu_deger[member.id]}M | "
-                    f"{ulke} | "
-                    f"{mevki}"
-                )
-            )
-
     await ctx.send(
-        f"📉 Yeni değer: "
-        f"`{oyuncu_deger[member.id]}M`"
+        f"Yeni değer: "
+        f"{oyuncu_deger[member.id]}M"
     )
 
 @bot.command()
@@ -803,8 +754,7 @@ async def dsayi(
     member = member or ctx.author
 
     await ctx.send(
-        f"💰 Değer: "
-        f"`{oyuncu_deger[member.id]}M`"
+        f"{oyuncu_deger[member.id]}M"
     )
 
 @bot.command()
@@ -818,28 +768,230 @@ async def dtop(ctx):
 
     text = ""
 
-    for i, (user_id, amount) in enumerate(
+    for i, (uid, amount) in enumerate(
         sorted_users[:10],
         start=1
     ):
 
-        user = bot.get_user(user_id)
+        user = bot.get_user(uid)
 
         text += (
-            f"{i}. {user} → `{amount}M`\n"
+            f"{i}. {user} → "
+            f"{amount}M\n"
         )
 
     embed = discord.Embed(
-        title="💎 Değer Top",
+        title="💰 Değer Top",
         description=text,
         color=discord.Color.gold()
     )
 
     await ctx.send(embed=embed)
 
-# ==================================================
+# =========================================================
+# LIG SISTEMI
+# =========================================================
+
+@bot.command()
+async def ligekle(ctx, *, isim):
+
+    global lig_adi
+
+    lig_adi = isim
+
+    await ctx.send(
+        f"Lig oluşturuldu: {isim}"
+    )
+
+@bot.command(name="ligtakımekle")
+async def ligtakimekle(ctx):
+
+    global lig_takimlari
+
+    mentions = ctx.message.role_mentions
+
+    if not mentions:
+        return await ctx.send(
+            "Takım etiketle."
+        )
+
+    for role in mentions:
+
+        if role not in lig_takimlari:
+            lig_takimlari.append(role)
+
+    await ctx.send(
+        f"{len(mentions)} takım eklendi."
+    )
+
+@bot.command()
+async def fiksturolustur(ctx):
+
+    global fikstur
+
+    fikstur.clear()
+
+    hafta_no = 1
+
+    for i in range(len(lig_takimlari)):
+
+        for j in range(i + 1, len(lig_takimlari)):
+
+            ev = lig_takimlari[i]
+            dep = lig_takimlari[j]
+
+            skor1 = random.randint(0,5)
+            skor2 = random.randint(0,5)
+
+            fikstur.append({
+
+                "hafta": hafta_no,
+                "ev": ev,
+                "dep": dep,
+                "s1": skor1,
+                "s2": skor2
+
+            })
+
+            hafta_no += 1
+
+    await ctx.send(
+        "Fikstür oluşturuldu."
+    )
+
+@bot.command()
+async def hafta(ctx, number: int):
+
+    matches = [
+        x for x in fikstur
+        if x["hafta"] == number
+    ]
+
+    if not matches:
+        return await ctx.send(
+            "Hafta bulunamadı."
+        )
+
+    text = ""
+
+    for m in matches:
+
+        ev = m["ev"]
+        dep = m["dep"]
+
+        s1 = m["s1"]
+        s2 = m["s2"]
+
+        text += (
+            f"{ev.mention} "
+            f"{s1}-{s2} "
+            f"{dep.mention}\n"
+        )
+
+        puan_durumu[ev.id]["oynanan"] += 1
+        puan_durumu[dep.id]["oynanan"] += 1
+
+        if s1 > s2:
+
+            puan_durumu[ev.id]["puan"] += 3
+            puan_durumu[ev.id]["galibiyet"] += 1
+
+            puan_durumu[dep.id]["maglubiyet"] += 1
+
+        elif s2 > s1:
+
+            puan_durumu[dep.id]["puan"] += 3
+            puan_durumu[dep.id]["galibiyet"] += 1
+
+            puan_durumu[ev.id]["maglubiyet"] += 1
+
+        else:
+
+            puan_durumu[ev.id]["puan"] += 1
+            puan_durumu[dep.id]["puan"] += 1
+
+            puan_durumu[ev.id]["beraberlik"] += 1
+            puan_durumu[dep.id]["beraberlik"] += 1
+
+    embed = discord.Embed(
+        title=f"📅 Hafta {number}",
+        description=text,
+        color=discord.Color.orange()
+    )
+
+    await ctx.send(embed=embed)
+
+@bot.command()
+async def puan(ctx):
+
+    siralama = sorted(
+        puan_durumu.items(),
+        key=lambda x: x[1]["puan"],
+        reverse=True
+    )
+
+    text = ""
+
+    for i, (team_id, stats) in enumerate(
+        siralama,
+        start=1
+    ):
+
+        role = ctx.guild.get_role(team_id)
+
+        text += (
+            f"{i}. {role.mention}\n"
+            f"P: {stats['puan']} | "
+            f"G: {stats['galibiyet']} | "
+            f"B: {stats['beraberlik']} | "
+            f"M: {stats['maglubiyet']}\n\n"
+        )
+
+    embed = discord.Embed(
+        title=f"🏆 {lig_adi}",
+        description=text,
+        color=discord.Color.gold()
+    )
+
+    await ctx.send(embed=embed)
+
+# =========================================================
+# ARA
+# =========================================================
+
+@bot.command()
+async def ara(ctx, *, isim):
+
+    bulunanlar = []
+
+    for member in ctx.guild.members:
+
+        nick = member.nick or member.name
+
+        if isim.lower() in nick.lower():
+
+            bulunanlar.append(
+                f"{member.mention} → `{nick}`"
+            )
+
+    if not bulunanlar:
+        return await ctx.send(
+            "Bulunamadı."
+        )
+
+    embed = discord.Embed(
+        title=f"🔎 {isim}",
+        description="\n".join(
+            bulunanlar[:20]
+        ),
+        color=discord.Color.blurple()
+    )
+
+    await ctx.send(embed=embed)
+
+# =========================================================
 # EGLENCE
-# ==================================================
+# =========================================================
 
 @bot.command()
 async def zar(ctx):
@@ -849,15 +1001,11 @@ async def zar(ctx):
     )
 
 @bot.command()
-async def iq(
-    ctx,
-    member: discord.Member=None
-):
-
-    member = member or ctx.author
+async def iq(ctx):
 
     await ctx.send(
-        f"🧠 IQ: {random.randint(1,300)}"
+        f"🧠 IQ: "
+        f"{random.randint(1,300)}"
     )
 
 @bot.command(name="8ball")
@@ -867,12 +1015,11 @@ async def eightball(ctx, *, question):
         "Evet",
         "Hayır",
         "Belki",
-        "Kesinlikle",
-        "İmkansız"
+        "Kesinlikle"
     ]
 
     await ctx.send(
-        f"🎱 {random.choice(answers)}"
+        random.choice(answers)
     )
 
 @bot.command()
@@ -880,17 +1027,17 @@ async def slot(ctx):
 
     emojis = [
         "🍎",
-        "🍌",
-        "🍇"
+        "🍇",
+        "🍒"
     ]
 
-    result = [
+    sonuc = [
         random.choice(emojis)
         for _ in range(3)
     ]
 
     await ctx.send(
-        " | ".join(result)
+        " | ".join(sonuc)
     )
 
 @bot.command()
@@ -924,38 +1071,16 @@ async def tokat(
         f"👋 {member.mention}"
     )
 
-@bot.command()
-async def hackle(
-    ctx,
-    member: discord.Member
-):
-
-    stages = [
-
-        "IP bulunuyor...",
-        "Token çekiliyor...",
-        "Hackleniyor..."
-    ]
-
-    msg = await ctx.send("Başladı")
-
-    for s in stages:
-
-        await msg.edit(content=s)
-
-    await msg.edit(
-        content=f"{member} hacklendi 💀"
-    )
-
-# ==================================================
+# =========================================================
 # UTILITY
-# ==================================================
+# =========================================================
 
 @bot.command()
 async def ping(ctx):
 
     await ctx.send(
-        f"🏓 {round(bot.latency*1000)}ms"
+        f"🏓 "
+        f"{round(bot.latency*1000)}ms"
     )
 
 @bot.command()
@@ -966,9 +1091,7 @@ async def avatar(
 
     member = member or ctx.author
 
-    embed = discord.Embed(
-        title=str(member)
-    )
+    embed = discord.Embed()
 
     embed.set_image(
         url=member.display_avatar.url
@@ -993,35 +1116,8 @@ async def sunucu(ctx):
 
     await ctx.send(embed=embed)
 
-@bot.command()
-async def kullanıcı(
-    ctx,
-    member: discord.Member=None
-):
-
-    member = member or ctx.author
-
-    embed = discord.Embed(
-        title=str(member)
-    )
-
-    embed.add_field(
-        name="ID",
-        value=member.id
-    )
-
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def botbilgi(ctx):
-
-    await ctx.send(
-        f"🤖 Sunucu sayısı: "
-        f"`{len(bot.guilds)}`"
-    )
-
-# ==================================================
-# BOT RUN
-# ==================================================
+# =========================================================
+# RUN
+# =========================================================
 
 bot.run(TOKEN)
