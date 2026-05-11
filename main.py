@@ -8,6 +8,7 @@ import os
 import random
 import difflib
 import discord
+import time
 
 from collections import defaultdict
 from discord.ext import commands
@@ -23,6 +24,8 @@ bot = commands.Bot(
     intents=intents,
     help_command=None
 )
+
+afk_users = {}
 
 # =========================================================
 # DATABASE
@@ -90,6 +93,7 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Game(".yardım")
     )
+
 
 # =========================================================
 # ANTRENMAN
@@ -162,7 +166,47 @@ async def on_message(message):
             await message.channel.send(embed=embed)
 
     await bot.process_commands(message)
+@bot.event
+async def on_message(message):
 
+    if message.author.bot:
+        return
+
+    # AFK'dan çıkış
+    if message.author.id in afk_users:
+
+        data = afk_users.pop(message.author.id)
+
+        embed = discord.Embed(
+            title="👋 AFK BİTTİ",
+            description=(
+                f"{message.author.mention} geri döndü\n"
+                f"AFK Sebebi: {data['reason']}"
+            ),
+            color=discord.Color.green()
+        )
+
+        await message.channel.send(embed=embed)
+
+    # AFK mention kontrol
+    for user in message.mentions:
+
+        if user.id in afk_users:
+
+            data = afk_users[user.id]
+
+            embed = discord.Embed(
+                title="😴 AFK KULLANICI",
+                description=(
+                    f"{user.name} şu anda AFK\n"
+                    f"Sebep: {data['reason']}"
+                ),
+                color=discord.Color.orange()
+            )
+
+            await message.channel.send(embed=embed)
+
+    await bot.process_commands(message)
 # =========================================================
 # HELP MENU
 # =========================================================
@@ -314,7 +358,19 @@ async def duyuruyap(ctx, *, mesaj):
         color=discord.Color.red()
     )
 
-    
+@bot.command()
+async def afk(ctx, *, reason="AFK"):
+
+    afk_users[ctx.author.id] = {
+        "reason": reason,
+        "time": time.time()
+    }
+
+    embed = discord.Embed(
+        title="😴 AFK MODU AKTİF",
+        description=f"{ctx.author.mention} artık AFK\nSebep: {reason}",
+        color=discord.Color.dark_gray()
+    )
 
     await ctx.send(embed=embed)
 
