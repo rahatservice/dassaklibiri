@@ -1,12 +1,5 @@
-# =========================================================
-# NOVA FOOTBALL ROLEPLAY BOT
-# Prefix: .
-# TOKEN environment variable kullanır
-# =========================================================
-
 import os
 import random
-import difflib
 import discord
 
 from collections import defaultdict
@@ -23,76 +16,44 @@ bot = commands.Bot(
     help_command=None
 )
 
-# =========================================================
+# =========================
 # DATABASE
-# =========================================================
+# =========================
+
+oyuncu_deger = defaultdict(lambda: 1)
+kayit_sayilari = defaultdict(int)
+antrenman = defaultdict(int)
 
 warnings = {}
 
-kayit_sayilari = defaultdict(int)
-
-oyuncu_deger = defaultdict(lambda: 1)
-
-antrenman_sayisi = defaultdict(int)
-
-# =========================================================
-# LIG DATABASE
-# =========================================================
-
+# LIG
 lig_adi = None
-
 lig_takimlari = []
-
 fikstur = []
 
-puan_durumu = defaultdict(
-    lambda: {
-        "puan": 0,
-        "oynanan": 0,
-        "galibiyet": 0,
-        "beraberlik": 0,
-        "maglubiyet": 0,
-        "atilan": 0,
-        "yenilen": 0
-    }
-)
+puan = defaultdict(lambda: {
+    "p":0,"g":0,"b":0,"m":0
+})
 
-# =========================================================
+# =========================
 # IDS
-# =========================================================
+# =========================
 
 KAYIT_YETKILI = 1503341765178953739
-
 DEGER_YETKILI = 1503341767049740369
-
 ANTRENMAN_KANAL = 1503342068821655653
 
-ROLLER = {
-
-    "Teknik Direktör": 1503341802646802434,
-    "Üye": 1503341807310999592,
-    "Bayan Üye": 1503341778915299338,
-    "Başkan": 1503341801568866315,
-    "Futbolcu": 1503341805293277285
-
-}
-
-# =========================================================
+# =========================
 # READY
-# =========================================================
+# =========================
 
 @bot.event
 async def on_ready():
+    print("Bot aktif")
 
-    print(f"{bot.user} aktif!")
-
-    await bot.change_presence(
-        activity=discord.Game(".yardım")
-    )
-
-# =========================================================
+# =========================
 # ANTRENMAN
-# =========================================================
+# =========================
 
 @bot.event
 async def on_message(message):
@@ -102,1022 +63,227 @@ async def on_message(message):
 
     if message.channel.id == ANTRENMAN_KANAL:
 
-        antrenman_sayisi[message.author.id] += 1
+        antrenman[message.author.id] += 1
 
-        sayi = antrenman_sayisi[message.author.id]
+        s = antrenman[message.author.id]
 
-        if sayi < 5:
+        if s < 5:
 
-            embed = discord.Embed(
-                title="🏋️ Antrenman Yapıldı",
-                description=f"{sayi}/5 tamamlandı.",
-                color=discord.Color.orange()
+            await message.channel.send(
+                f"🏋️ {s}/5 antrenman"
             )
-
-            await message.channel.send(embed=embed)
 
         else:
 
-            antrenman_sayisi[message.author.id] = 0
-
+            antrenman[message.author.id] = 0
             oyuncu_deger[message.author.id] += 3
 
-            member = message.author
-
-            nick = member.nick or member.name
-
-            parts = nick.split("|")
-
-            if len(parts) >= 4:
-
-                isim = parts[0].strip()
-                ulke = parts[2].strip()
-                mevki = parts[3].strip()
-
-                try:
-
-                    await member.edit(
-                        nick=(
-                            f"{isim} | "
-                            f"{oyuncu_deger[member.id]}M | "
-                            f"{ulke} | "
-                            f"{mevki}"
-                        )
-                    )
-
-                except:
-                    pass
-
-            embed = discord.Embed(
-                title="🔥 Antrenman Tamamlandı",
-                description=(
-                    f"{member.mention} +3M aldı.\n"
-                    f"Yeni değer: "
-                    f"{oyuncu_deger[member.id]}M"
-                ),
-                color=discord.Color.green()
+            await message.channel.send(
+                f"🔥 +3M verildi"
             )
-
-            await message.channel.send(embed=embed)
 
     await bot.process_commands(message)
 
-# =========================================================
-# HELP MENU
-# =========================================================
-
-class HelpSelect(Select):
-
-    def __init__(self):
-
-        options = [
-
-            discord.SelectOption(
-                label="Moderasyon",
-                emoji="🛡️"
-            ),
-
-            discord.SelectOption(
-                label="Kayıt",
-                emoji="📋"
-            ),
-
-            discord.SelectOption(
-                label="Lig",
-                emoji="🏆"
-            ),
-
-            discord.SelectOption(
-                label="Eğlence",
-                emoji="🎮"
-            ),
-
-            discord.SelectOption(
-                label="Utility",
-                emoji="⚙️"
-            )
-
-        ]
-
-        super().__init__(
-            placeholder="Kategori seç...",
-            options=options
-        )
-
-    async def callback(self, interaction):
-
-        secim = self.values[0]
-
-        if secim == "Moderasyon":
-
-            text = """
-`.ban`
-`.kick`
-`.mute`
-`.unmute`
-`.clear`
-`.warn`
-`.warns`
-`.rolver`
-`.rolal`
-"""
-
-        elif secim == "Kayıt":
-
-            text = """
-`.k`
-`.kayitsayi`
-`.kayittop`
-`.dver`
-`.dsil`
-`.dsayi`
-`.dtop`
-"""
-
-        elif secim == "Lig":
-
-            text = """
-`.ligekle`
-`.ligtakımekle`
-`.fiksturolustur`
-`.hafta`
-`.puan`
-"""
-
-        elif secim == "Eğlence":
-
-            text = """
-`.zar`
-`.iq`
-`.8ball`
-`.slot`
-`.ship`
-`.öp`
-`.tokat`
-"""
-
-        else:
-
-            text = """
-`.ping`
-`.avatar`
-`.sunucu`
-`.ara`
-"""
-
-        embed = discord.Embed(
-            title=f"{secim} Komutları",
-            description=text,
-            color=discord.Color.blurple()
-        )
-
-        await interaction.response.edit_message(
-            embed=embed
-        )
-
-class HelpView(View):
-
-    def __init__(self):
-
-        super().__init__()
-
-        self.add_item(
-            HelpSelect()
-        )
-
-@bot.command()
-async def yardım(ctx):
-
-    embed = discord.Embed(
-        title="🤖 NOVA BOT",
-        description=(
-            "Kategori seç.\n"
-            "Futbol RP evrenine hoş geldin."
-        ),
-        color=discord.Color.blurple()
-    )
-
-    await ctx.send(
-        embed=embed,
-        view=HelpView()
-    )
-
-# =========================================================
-# MODERASYON
-# =========================================================
-
-async def can_moderate(ctx, member):
-
-    if member == ctx.author:
-        return False
-
-    if member.top_role >= ctx.author.top_role:
-        return False
-
-    if member.top_role >= ctx.guild.me.top_role:
-        return False
-
-    return True
-
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member):
-
-    if not await can_moderate(ctx, member):
-        return await ctx.send("Yetki yetersiz.")
-
-    await member.ban()
-
-    await ctx.send(f"{member} banlandı.")
-
-@bot.command()
-@commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member):
-
-    if not await can_moderate(ctx, member):
-        return await ctx.send("Yetki yetersiz.")
-
-    await member.kick()
-
-    await ctx.send(f"{member} kicklendi.")
-
-@bot.command()
-@commands.has_permissions(manage_messages=True)
-async def clear(ctx, amount: int):
-
-    await ctx.channel.purge(
-        limit=amount + 1
-    )
-
-    msg = await ctx.send(
-        f"{amount} mesaj silindi."
-    )
-
-    await msg.delete(delay=3)
-
-@bot.command()
-async def warn(
-    ctx,
-    member: discord.Member,
-    *,
-    reason="Sebep yok"
-):
-
-    if member.id not in warnings:
-        warnings[member.id] = []
-
-    warnings[member.id].append(reason)
-
-    await ctx.send(
-        f"{member} warn aldı."
-    )
-
-@bot.command()
-async def warns(ctx, member: discord.Member):
-
-    w = warnings.get(member.id, [])
-
-    if not w:
-        return await ctx.send("Warn yok.")
-
-    await ctx.send("\n".join(w))
-
-@bot.command()
-@commands.has_permissions(manage_roles=True)
-async def mute(ctx, member: discord.Member):
-
-    role = discord.utils.get(
-        ctx.guild.roles,
-        name="Muted"
-    )
-
-    if not role:
-
-        role = await ctx.guild.create_role(
-            name="Muted"
-        )
-
-        for channel in ctx.guild.channels:
-
-            await channel.set_permissions(
-                role,
-                send_messages=False
-            )
-
-    await member.add_roles(role)
-
-    await ctx.send("Susturuldu.")
-
-@bot.command()
-@commands.has_permissions(manage_roles=True)
-async def unmute(ctx, member: discord.Member):
-
-    role = discord.utils.get(
-        ctx.guild.roles,
-        name="Muted"
-    )
-
-    await member.remove_roles(role)
-
-    await ctx.send("Susturma kaldırıldı.")
-
-# =========================================================
-# SMART ROLVER
-# =========================================================
-
-@bot.command()
-@commands.has_permissions(manage_roles=True)
-async def rolver(
-    ctx,
-    member_or_role=None,
-    *,
-    role_name=None
-):
-
-    member = None
-    query = None
-
-    if ctx.message.reference:
-
-        replied = await ctx.channel.fetch_message(
-            ctx.message.reference.message_id
-        )
-
-        member = replied.author
-
-        query = member_or_role
-
-    else:
-
-        if not ctx.message.mentions:
-            return await ctx.send(
-                "Kullanıcı etiketle."
-            )
-
-        member = ctx.message.mentions[0]
-
-        query = role_name
-
-    if not query:
-        return await ctx.send(
-            "Rol belirt."
-        )
-
-    role_names = [
-        r.name for r in ctx.guild.roles
-    ]
-
-    closest = difflib.get_close_matches(
-        query,
-        role_names,
-        n=1,
-        cutoff=0.3
-    )
-
-    if not closest:
-        return await ctx.send(
-            "Rol bulunamadı."
-        )
-
-    role = discord.utils.get(
-        ctx.guild.roles,
-        name=closest[0]
-    )
-
-    await member.add_roles(role)
-
-    await ctx.send(
-        f"{member.mention} → {role.mention}"
-    )
-
-@bot.command()
-@commands.has_permissions(manage_roles=True)
-async def rolal(
-    ctx,
-    member: discord.Member,
-    *,
-    role: discord.Role
-):
-
-    await member.remove_roles(role)
-
-    await ctx.send("Rol alındı.")
-
-# =========================================================
-# KAYIT SISTEMI
-# =========================================================
-
-class KayitSelect(discord.ui.Select):
-
-    def __init__(self, uye):
-
-        self.uye = uye
-
-        options = [
-
-            discord.SelectOption(
-                label="Teknik Direktör",
-                emoji="💼"
-            ),
-
-            discord.SelectOption(
-                label="Üye",
-                emoji="👤"
-            ),
-
-            discord.SelectOption(
-                label="Bayan Üye",
-                emoji="🎀"
-            ),
-
-            discord.SelectOption(
-                label="Başkan",
-                emoji="🤵🏻‍♂️"
-            ),
-
-            discord.SelectOption(
-                label="Futbolcu",
-                emoji="🧩"
-            )
-
-        ]
-
-        super().__init__(
-            placeholder="Rol seç...",
-            options=options
-        )
-
-    async def callback(self, interaction):
-
-        role_name = self.values[0]
-
-        role_id = ROLLER[role_name]
-
-        role = interaction.guild.get_role(
-            role_id
-        )
-
-        await self.uye.add_roles(role)
-
-        kayit_sayilari[
-            interaction.user.id
-        ] += 1
-
-        embed = discord.Embed(
-            title="✅ Kayıt Yapıldı",
-            description=(
-                f"{self.uye.mention} → "
-                f"{role.mention}"
-            ),
-            color=discord.Color.green()
-        )
-
-        await interaction.response.edit_message(
-            embed=embed,
-            view=None
-        )
-
-class KayitView(View):
-
-    def __init__(self, uye):
-
-        super().__init__(timeout=60)
-
-        self.add_item(
-            KayitSelect(uye)
-        )
+# =========================
+# KAYIT
+# =========================
 
 @bot.command()
 @commands.has_role(KAYIT_YETKILI)
-async def k(
-    ctx,
-    member: discord.Member,
-    isim,
-    deger,
-    ulke,
-    mevki
-):
+async def k(ctx, member: discord.Member, *, isim):
 
-    try:
+    await member.edit(nick=isim)
 
-        temiz = int(
-            deger.upper().replace("M", "")
-        )
-
-    except:
-
-        return await ctx.send(
-            "Örnek değer: 5M"
-        )
-
-    oyuncu_deger[member.id] = temiz
-
-    await member.edit(
-        nick=(
-            f"{isim} | "
-            f"{deger.upper()} | "
-            f"{ulke} | "
-            f"{mevki}"
-        )
-    )
-
-    embed = discord.Embed(
-        title="📋 Kayıt Paneli",
-        description=(
-            f"👤 {member.mention}\n"
-            f"🧩 {isim}\n"
-            f"💰 {deger.upper()}\n"
-            f"🌍 {ulke}\n"
-            f"⚽ {mevki}"
-        ),
-        color=discord.Color.blurple()
-    )
+    oyuncu_deger[member.id] = 1
 
     await ctx.send(
-        embed=embed,
-        view=KayitView(member)
+        f"📋 {member.mention} → {isim}"
     )
 
-@bot.command()
-async def kayitsayi(
-    ctx,
-    member: discord.Member=None
-):
-
-    member = member or ctx.author
-
-    await ctx.send(
-        f"Kayıt sayısı: "
-        f"{kayit_sayilari[member.id]}"
-    )
-
-@bot.command()
-async def kayittop(ctx):
-
-    sorted_users = sorted(
-        kayit_sayilari.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )
-
-    text = ""
-
-    for i, (uid, amount) in enumerate(
-        sorted_users[:10],
-        start=1
-    ):
-
-        user = bot.get_user(uid)
-
-        text += (
-            f"{i}. {user} → "
-            f"{amount}\n"
-        )
-
-    embed = discord.Embed(
-        title="🏆 Kayıt Top",
-        description=text,
-        color=discord.Color.gold()
-    )
-
-    await ctx.send(embed=embed)
-
-# =========================================================
-# DEGER SISTEMI
-# =========================================================
+# =========================
+# DEGER
+# =========================
 
 @bot.command()
 @commands.has_role(DEGER_YETKILI)
-async def dver(
-    ctx,
-    member: discord.Member,
-    amount: int
-):
+async def dver(ctx, member: discord.Member, amount=None):
+
+    if amount is None:
+
+        return await ctx.send(
+            "❌ Kullanım: `.dver @kullanıcı 3`"
+        )
+
+    if not str(amount).isdigit():
+
+        return await ctx.send(
+            "❌ Sadece sayı yaz"
+        )
+
+    amount = int(amount)
 
     oyuncu_deger[member.id] += amount
 
-    nick = member.nick
-
-    if nick and "|" in nick:
-
-        parts = nick.split("|")
-
-        if len(parts) >= 4:
-
-            isim = parts[0].strip()
-            ulke = parts[2].strip()
-            mevki = parts[3].strip()
-
-            await member.edit(
-                nick=(
-                    f"{isim} | "
-                    f"{oyuncu_deger[member.id]}M | "
-                    f"{ulke} | "
-                    f"{mevki}"
-                )
-            )
-
     await ctx.send(
-        f"Yeni değer: "
-        f"{oyuncu_deger[member.id]}M"
+        f"💰 +{amount}M → {oyuncu_deger[member.id]}M"
     )
 
 @bot.command()
 @commands.has_role(DEGER_YETKILI)
-async def dsil(
-    ctx,
-    member: discord.Member,
-    amount: int
-):
+async def dsil(ctx, member: discord.Member, amount: int):
 
-    if oyuncu_deger[member.id] <= 1:
-        return await ctx.send(
-            "1M altına düşemez."
-        )
-
-    oyuncu_deger[member.id] -= amount
-
-    if oyuncu_deger[member.id] < 1:
-        oyuncu_deger[member.id] = 1
+    oyuncu_deger[member.id] = max(
+        1,
+        oyuncu_deger[member.id] - amount
+    )
 
     await ctx.send(
-        f"Yeni değer: "
-        f"{oyuncu_deger[member.id]}M"
+        f"📉 {oyuncu_deger[member.id]}M"
     )
 
 @bot.command()
-async def dsayi(
-    ctx,
-    member: discord.Member=None
-):
+async def dsayi(ctx, member: discord.Member=None):
 
     member = member or ctx.author
 
     await ctx.send(
-        f"{oyuncu_deger[member.id]}M"
+        f"💰 {oyuncu_deger[member.id]}M"
     )
+
+# =========================
+# ARA
+# =========================
 
 @bot.command()
-async def dtop(ctx):
+async def ara(ctx, *, isim):
 
-    sorted_users = sorted(
-        oyuncu_deger.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )
+    res = []
 
-    text = ""
+    for m in ctx.guild.members:
 
-    for i, (uid, amount) in enumerate(
-        sorted_users[:10],
-        start=1
-    ):
+        n = m.nick or m.name
 
-        user = bot.get_user(uid)
+        if isim.lower() in n.lower():
 
-        text += (
-            f"{i}. {user} → "
-            f"{amount}M\n"
-        )
+            res.append(f"{m.mention} → {n}")
 
-    embed = discord.Embed(
-        title="💰 Değer Top",
-        description=text,
-        color=discord.Color.gold()
-    )
+    if not res:
+        return await ctx.send("Bulunamadı")
 
-    await ctx.send(embed=embed)
+    await ctx.send("\n".join(res[:10]))
 
-# =========================================================
-# LIG SISTEMI
-# =========================================================
+# =========================
+# LIG
+# =========================
 
 @bot.command()
 async def ligekle(ctx, *, isim):
 
     global lig_adi
-
     lig_adi = isim
 
-    await ctx.send(
-        f"Lig oluşturuldu: {isim}"
-    )
+    await ctx.send(f"🏆 Lig: {isim}")
 
-@bot.command(name="ligtakımekle")
-async def ligtakimekle(ctx):
+@bot.command()
+async def ligtakımekle(ctx):
 
-    global lig_takimlari
+    roles = ctx.message.role_mentions
 
-    mentions = ctx.message.role_mentions
+    for r in roles:
 
-    if not mentions:
-        return await ctx.send(
-            "Takım etiketle."
-        )
+        if r not in lig_takimlari:
+            lig_takimlari.append(r)
 
-    for role in mentions:
-
-        if role not in lig_takimlari:
-            lig_takimlari.append(role)
-
-    await ctx.send(
-        f"{len(mentions)} takım eklendi."
-    )
+    await ctx.send("Takımlar eklendi")
 
 @bot.command()
 async def fiksturolustur(ctx):
 
     global fikstur
+    fikstur = []
 
-    fikstur.clear()
-
-    hafta_no = 1
+    hafta = 1
 
     for i in range(len(lig_takimlari)):
 
-        for j in range(i + 1, len(lig_takimlari)):
-
-            ev = lig_takimlari[i]
-            dep = lig_takimlari[j]
-
-            skor1 = random.randint(0,5)
-            skor2 = random.randint(0,5)
+        for j in range(i+1, len(lig_takimlari)):
 
             fikstur.append({
-
-                "hafta": hafta_no,
-                "ev": ev,
-                "dep": dep,
-                "s1": skor1,
-                "s2": skor2
-
+                "h": hafta,
+                "ev": lig_takimlari[i],
+                "dep": lig_takimlari[j],
+                "s1": random.randint(0,5),
+                "s2": random.randint(0,5)
             })
 
-            hafta_no += 1
+            hafta += 1
 
-    await ctx.send(
-        "Fikstür oluşturuldu."
-    )
+    await ctx.send("Fikstür hazır")
 
 @bot.command()
-async def hafta(ctx, number: int):
+async def hafta(ctx, no: int):
 
-    matches = [
-        x for x in fikstur
-        if x["hafta"] == number
-    ]
+    m = [x for x in fikstur if x["h"] == no]
 
-    if not matches:
-        return await ctx.send(
-            "Hafta bulunamadı."
+    if not m:
+        return await ctx.send("Yok")
+
+    txt = ""
+
+    for x in m:
+
+        txt += (
+            f"{x['ev'].mention} "
+            f"{x['s1']}-{x['s2']} "
+            f"{x['dep'].mention}\n"
         )
 
-    text = ""
-
-    for m in matches:
-
-        ev = m["ev"]
-        dep = m["dep"]
-
-        s1 = m["s1"]
-        s2 = m["s2"]
-
-        text += (
-            f"{ev.mention} "
-            f"{s1}-{s2} "
-            f"{dep.mention}\n"
-        )
-
-        puan_durumu[ev.id]["oynanan"] += 1
-        puan_durumu[dep.id]["oynanan"] += 1
-
-        if s1 > s2:
-
-            puan_durumu[ev.id]["puan"] += 3
-            puan_durumu[ev.id]["galibiyet"] += 1
-
-            puan_durumu[dep.id]["maglubiyet"] += 1
-
-        elif s2 > s1:
-
-            puan_durumu[dep.id]["puan"] += 3
-            puan_durumu[dep.id]["galibiyet"] += 1
-
-            puan_durumu[ev.id]["maglubiyet"] += 1
-
-        else:
-
-            puan_durumu[ev.id]["puan"] += 1
-            puan_durumu[dep.id]["puan"] += 1
-
-            puan_durumu[ev.id]["beraberlik"] += 1
-            puan_durumu[dep.id]["beraberlik"] += 1
-
-    embed = discord.Embed(
-        title=f"📅 Hafta {number}",
-        description=text,
-        color=discord.Color.orange()
-    )
-
-    await ctx.send(embed=embed)
+    await ctx.send(txt)
 
 @bot.command()
 async def puan(ctx):
 
-    siralama = sorted(
-        puan_durumu.items(),
-        key=lambda x: x[1]["puan"],
+    s = sorted(
+        puan.items(),
+        key=lambda x: x[1]["p"],
         reverse=True
     )
 
-    text = ""
+    txt = ""
 
-    for i, (team_id, stats) in enumerate(
-        siralama,
-        start=1
-    ):
+    for i,(id,v) in enumerate(s,1):
 
-        role = ctx.guild.get_role(team_id)
+        r = ctx.guild.get_role(id)
 
-        text += (
-            f"{i}. {role.mention}\n"
-            f"P: {stats['puan']} | "
-            f"G: {stats['galibiyet']} | "
-            f"B: {stats['beraberlik']} | "
-            f"M: {stats['maglubiyet']}\n\n"
-        )
+        txt += f"{i}. {r.mention} {v['p']}p\n"
+
+    await ctx.send(txt)
+
+# =========================
+# HELP
+# =========================
+
+@bot.command()
+async def yardım(ctx):
 
     embed = discord.Embed(
-        title=f"🏆 {lig_adi}",
-        description=text,
-        color=discord.Color.gold()
-    )
-
-    await ctx.send(embed=embed)
-
-# =========================================================
-# ARA
-# =========================================================
-
-@bot.command()
-async def ara(ctx, *, isim):
-
-    bulunanlar = []
-
-    for member in ctx.guild.members:
-
-        nick = member.nick or member.name
-
-        if isim.lower() in nick.lower():
-
-            bulunanlar.append(
-                f"{member.mention} → `{nick}`"
-            )
-
-    if not bulunanlar:
-        return await ctx.send(
-            "Bulunamadı."
-        )
-
-    embed = discord.Embed(
-        title=f"🔎 {isim}",
-        description="\n".join(
-            bulunanlar[:20]
-        ),
-        color=discord.Color.blurple()
-    )
-
-    await ctx.send(embed=embed)
-
-# =========================================================
-# EGLENCE
-# =========================================================
-
-@bot.command()
-async def zar(ctx):
-
-    await ctx.send(
-        f"🎲 {random.randint(1,6)}"
-    )
-
-@bot.command()
-async def iq(ctx):
-
-    await ctx.send(
-        f"🧠 IQ: "
-        f"{random.randint(1,300)}"
-    )
-
-@bot.command(name="8ball")
-async def eightball(ctx, *, question):
-
-    answers = [
-        "Evet",
-        "Hayır",
-        "Belki",
-        "Kesinlikle"
-    ]
-
-    await ctx.send(
-        random.choice(answers)
-    )
-
-@bot.command()
-async def slot(ctx):
-
-    emojis = [
-        "🍎",
-        "🍇",
-        "🍒"
-    ]
-
-    sonuc = [
-        random.choice(emojis)
-        for _ in range(3)
-    ]
-
-    await ctx.send(
-        " | ".join(sonuc)
-    )
-
-@bot.command()
-async def ship(
-    ctx,
-    m1: discord.Member,
-    m2: discord.Member
-):
-
-    await ctx.send(
-        f"❤️ %{random.randint(1,100)}"
-    )
-
-@bot.command()
-async def öp(
-    ctx,
-    member: discord.Member
-):
-
-    await ctx.send(
-        f"😘 {member.mention}"
-    )
-
-@bot.command()
-async def tokat(
-    ctx,
-    member: discord.Member
-):
-
-    await ctx.send(
-        f"👋 {member.mention}"
-    )
-
-# =========================================================
-# UTILITY
-# =========================================================
-
-@bot.command()
-async def ping(ctx):
-
-    await ctx.send(
-        f"🏓 "
-        f"{round(bot.latency*1000)}ms"
-    )
-
-@bot.command()
-async def avatar(
-    ctx,
-    member: discord.Member=None
-):
-
-    member = member or ctx.author
-
-    embed = discord.Embed()
-
-    embed.set_image(
-        url=member.display_avatar.url
-    )
-
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def sunucu(ctx):
-
-    guild = ctx.guild
-
-    embed = discord.Embed(
-        title=guild.name,
+        title="⚽ BOT MENÜ",
+        description="""
+.k
+.dver
+.dsil
+.dsayi
+.ligekle
+.fiksturolustur
+.ara
+        """,
         color=discord.Color.green()
     )
 
-    embed.add_field(
-        name="Üye",
-        value=guild.member_count
-    )
-
     await ctx.send(embed=embed)
 
-# =========================================================
+# =========================
 # RUN
-# =========================================================
+# =========================
 
 bot.run(TOKEN)
