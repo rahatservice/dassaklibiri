@@ -798,33 +798,44 @@ async def ligtakimekle(ctx):
 async def fiksturolustur(ctx):
 
     global fikstur
-
     fikstur.clear()
 
-    hafta_no = 1
+    takimlar = lig_takimlari.copy()
 
-    for i in range(len(lig_takimlari)):
+    # Tek sayıda takım varsa bye ekle
+    if len(takimlar) % 2 == 1:
+        takimlar.append(None)
 
-        for j in range(i + 1, len(lig_takimlari)):
+    n = len(takimlar)
+    rounds = n - 1
+    half = n // 2
 
-            ev = lig_takimlari[i]
-            dep = lig_takimlari[j]
+    for hafta in range(rounds):
+
+        for i in range(half):
+
+            ev = takimlar[i]
+            dep = takimlar[n - 1 - i]
+
+            if ev is None or dep is None:
+                continue
 
             fikstur.append({
-
-                "hafta": hafta_no,
+                "hafta": hafta + 1,
                 "ev": ev,
                 "dep": dep,
                 "s1": None,
                 "s2": None
-
             })
 
-            hafta_no += 1
+        # Döndür (round-robin sistemi)
+        takimlar = (
+            [takimlar[0]] +
+            [takimlar[-1]] +
+            takimlar[1:-1]
+        )
 
-    await ctx.send(
-        "Fikstür oluşturuldu."
-    )
+    await ctx.send("Fikstür düzgün şekilde oluşturuldu. Artık hafta 1 yalnız hissetmeyecek.")
 
 @bot.command()
 async def hafta(ctx, number: int):
