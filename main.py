@@ -29,13 +29,8 @@ afk_users = {}
 
 from discord.ext import commands
 
-def has_role_id(role_id):
-
-    def predicate(ctx):
-
-        return any(role.id == role_id for role in ctx.author.roles)
-
-    return commands.check(predicate)
+def has_deger_yetki(ctx):
+    return DEGER_YETKILI in [r.id for r in ctx.author.roles]
 
 # =========================================================
 # DATABASE
@@ -810,40 +805,38 @@ class KayitView(View):
 
 
 @bot.command()
-@has_role_id(DEGER_YETKILI)
 async def dver(ctx, member: discord.Member, amount: int):
+
+    if not has_deger_yetki(ctx):
+        return await ctx.send("❌ Yetkin yok.")
 
     oyuncu_deger[member.id] = oyuncu_deger.get(member.id, 1) + amount
 
     await ctx.send(
         f"💸 {member.mention} yeni değer: {oyuncu_deger[member.id]}M"
     )
-
-
 @bot.command()
-@has_role_id(DEGER_YETKILI)
 async def dsil(ctx, member: discord.Member, amount: int):
 
-    oyuncu_deger[member.id] = oyuncu_deger.get(member.id, 1) - amount
+    if not has_deger_yetki(ctx):
+        return await ctx.send("❌ Yetkin yok.")
 
-    if oyuncu_deger[member.id] < 1:
-        oyuncu_deger[member.id] = 1
+    oyuncu_deger[member.id] = max(
+        1,
+        oyuncu_deger.get(member.id, 1) - amount
+    )
 
     await ctx.send(
         f"🪫 {member.mention} yeni değer: {oyuncu_deger[member.id]}M"
     )
-
-
 @bot.command()
 async def dsayi(ctx, member: discord.Member = None):
 
     member = member or ctx.author
 
     await ctx.send(
-        f"📊 {member.display_name} değeri: {oyuncu_deger[member.id]}M"
+        f"📊 {member.display_name} değeri: {oyuncu_deger.get(member.id, 1)}M"
     )
-
-
 @bot.command()
 async def dtop(ctx):
 
@@ -856,34 +849,20 @@ async def dtop(ctx):
     text = ""
 
     for i, (uid, amount) in enumerate(sorted_users[:10], start=1):
-        user = bot.get_user(uid)
-        name = user.name if user else "Bilinmiyor"
+
+        user = ctx.guild.get_member(uid)
+
+        name = user.display_name if user else "Bilinmiyor"
 
         text += f"{i}. {name} → {amount}M\n"
 
     embed = discord.Embed(
         title="💰 DEĞER TOP 10",
-        description=text,
+        description=text or "Veri yok",
         color=discord.Color.gold()
     )
 
     await ctx.send(embed=embed)
-
-# =========================================================
-# ERROR HANDLER (artık hata saklamıyor)
-# =========================================================
-
-@dver.error
-async def dver_error(ctx, error):
-    await ctx.send(f"❌ Hata: {error}")
-
-@dsil.error
-async def dsil_error(ctx, error):
-    await ctx.send(f"❌ Hata: {error}")
-
-# =========================================================
-# START
-# =========================================================
 
 
 # =========================================================
