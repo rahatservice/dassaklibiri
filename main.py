@@ -16,6 +16,7 @@ from discord.ui import View, Select
 TOKEN = os.getenv("TOKEN")
 
 intents = discord.Intents.all()
+intents.members = True
 
 bot = commands.Bot(
     command_prefix=".",
@@ -344,6 +345,8 @@ async def dmall(ctx, *, mesaj):
 @bot.command()
 async def takimlar(ctx):
 
+    await ctx.guild.chunk()
+
     TAKIMLAR = {
         "Arsenal┇⚽": 1500000000000000001,
         "Bayer Leverkusen┇⚽": 1500000000000000002,
@@ -375,7 +378,7 @@ async def takimlar(ctx):
 
         role = ctx.guild.get_role(role_id)
 
-        if not role:
+        if role is None:
             continue
 
         baskan_var = False
