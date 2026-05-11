@@ -804,6 +804,7 @@ class KayitView(View):
 
 
 
+
 @bot.command()
 async def dver(ctx, member: discord.Member, amount: int):
 
@@ -812,9 +813,24 @@ async def dver(ctx, member: discord.Member, amount: int):
 
     oyuncu_deger[member.id] = oyuncu_deger.get(member.id, 1) + amount
 
-    await ctx.send(
-        f"💸 {member.mention} yeni değer: {oyuncu_deger[member.id]}M"
-    )
+    nick = member.nick or member.name
+
+    if "|" in nick:
+        parts = nick.split("|")
+
+        if len(parts) >= 4:
+
+            isim = parts[0].strip()
+            ulke = parts[2].strip()
+            mevki = parts[3].strip()
+
+            await update_nick(
+                member,
+                oyuncu_deger[member.id],
+                ulke,
+                mevki,
+                isim
+            )
 @bot.command()
 async def dsil(ctx, member: discord.Member, amount: int):
 
@@ -826,8 +842,31 @@ async def dsil(ctx, member: discord.Member, amount: int):
         oyuncu_deger.get(member.id, 1) - amount
     )
 
+    nick = member.nick or member.name
+
+    if "|" in nick:
+        parts = nick.split("|")
+
+        if len(parts) >= 4:
+
+            isim = parts[0].strip()
+            ulke = parts[2].strip()
+            mevki = parts[3].strip()
+
+            await update_nick(
+                member,
+                oyuncu_deger[member.id],
+                ulke,
+                mevki,
+                isim
+            )
+
     await ctx.send(
-        f"🪫 {member.mention} yeni değer: {oyuncu_deger[member.id]}M"
+        f"🪫 {member.mention} → {oyuncu_deger[member.id]}M"
+    )
+
+    await ctx.send(
+        f"💸 {member.mention} → {oyuncu_deger[member.id]}M"
     )
 @bot.command()
 async def dsayi(ctx, member: discord.Member = None):
@@ -835,7 +874,8 @@ async def dsayi(ctx, member: discord.Member = None):
     member = member or ctx.author
 
     await ctx.send(
-        f"📊 {member.display_name} değeri: {oyuncu_deger.get(member.id, 1)}M"
+        f"📊 {member.display_name} → {oyuncu_deger.get(member.id, 1)}M"
+    )
     )
 @bot.command()
 async def dtop(ctx):
