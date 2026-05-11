@@ -799,80 +799,40 @@ class KayitView(View):
 
 
 
-# =========================================================
-# DEGER SISTEMI
-# =========================================================
-
 @bot.command()
-@commands.has_role(DEGER_YETKILI)
-async def dver(
-    ctx,
-    member: discord.Member,
-    amount: int
-):
+@has_role_id(DEGER_YETKILI)
+async def dver(ctx, member: discord.Member, amount: int):
 
-    oyuncu_deger[member.id] += amount
-
-    nick = member.nick
-
-    if nick and "|" in nick:
-
-        parts = nick.split("|")
-
-        if len(parts) >= 4:
-
-            isim = parts[0].strip()
-            ulke = parts[2].strip()
-            mevki = parts[3].strip()
-
-            await member.edit(
-                nick=(
-                    f"{isim} | "
-                    f"{oyuncu_deger[member.id]}M | "
-                    f"{ulke} | "
-                    f"{mevki}"
-                )
-            )
+    oyuncu_deger[member.id] = oyuncu_deger.get(member.id, 1) + amount
 
     await ctx.send(
-        f"Yeni değer: "
-        f"{oyuncu_deger[member.id]}M"
+        f"💸 {member.mention} yeni değer: {oyuncu_deger[member.id]}M"
     )
 
+
 @bot.command()
-@commands.has_role(DEGER_YETKILI)
-async def dsil(
-    ctx,
-    member: discord.Member,
-    amount: int
-):
+@has_role_id(DEGER_YETKILI)
+async def dsil(ctx, member: discord.Member, amount: int):
 
-    if oyuncu_deger[member.id] <= 1:
-        return await ctx.send(
-            "1M altına düşemez."
-        )
-
-    oyuncu_deger[member.id] -= amount
+    oyuncu_deger[member.id] = oyuncu_deger.get(member.id, 1) - amount
 
     if oyuncu_deger[member.id] < 1:
         oyuncu_deger[member.id] = 1
 
     await ctx.send(
-        f"Yeni değer: "
-        f"{oyuncu_deger[member.id]}M"
+        f"🪫 {member.mention} yeni değer: {oyuncu_deger[member.id]}M"
     )
 
+
 @bot.command()
-async def dsayi(
-    ctx,
-    member: discord.Member=None
-):
+async def dsayi(ctx, member: discord.Member = None):
 
     member = member or ctx.author
 
     await ctx.send(
-        f"{oyuncu_deger[member.id]}M"
+        f"📊 {member.display_name} değeri: {oyuncu_deger[member.id]}M"
     )
+
 
 @bot.command()
 async def dtop(ctx):
@@ -885,25 +845,36 @@ async def dtop(ctx):
 
     text = ""
 
-    for i, (uid, amount) in enumerate(
-        sorted_users[:10],
-        start=1
-    ):
-
+    for i, (uid, amount) in enumerate(sorted_users[:10], start=1):
         user = bot.get_user(uid)
+        name = user.name if user else "Bilinmiyor"
 
-        text += (
-            f"{i}. {user} → "
-            f"{amount}M\n"
-        )
+        text += f"{i}. {name} → {amount}M\n"
 
     embed = discord.Embed(
-        title="💰 Değer Top",
+        title="💰 DEĞER TOP 10",
         description=text,
         color=discord.Color.gold()
     )
 
     await ctx.send(embed=embed)
+
+# =========================================================
+# ERROR HANDLER (artık hata saklamıyor)
+# =========================================================
+
+@dver.error
+async def dver_error(ctx, error):
+    await ctx.send(f"❌ Hata: {error}")
+
+@dsil.error
+async def dsil_error(ctx, error):
+    await ctx.send(f"❌ Hata: {error}")
+
+# =========================================================
+# START
+# =========================================================
+
 
 # =========================================================
 # LIG SISTEMI
