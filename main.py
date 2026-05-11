@@ -313,7 +313,7 @@ async def duyuruyap(ctx, *, mesaj):
         color=discord.Color.red()
     )
 
-    embed.set_footer(text=f"Duyuru yapan: {ctx.author}")
+    
 
     await ctx.send(embed=embed)
 
