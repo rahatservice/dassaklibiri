@@ -770,7 +770,7 @@ async def rolal(
 
 
 
-    @bot.command(name="dver")
+ @bot.command(name="dver")
    async def dver(ctx, uye: discord.Member, miktar: str, *, sebep: str = "Belirtilmedi"):
     try:
         if not deger_yetkisi_var_mi(ctx.author):
