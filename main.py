@@ -799,69 +799,7 @@ class KayitView(View):
             KayitSelect(uye)
         )
 
-@bot.command()
-@commands.has_role(KAYIT_YETKILI)
-async def k(ctx, member: discord.Member, *, isim):
 
-    await member.edit(nick=isim)
-
-    embed = discord.Embed(
-        title="📋 Kayıt Paneli",
-        description=(
-            f"👤 {member.mention}\n"
-            f"🧩 {isim}"
-        ),
-        color=discord.Color.blurple()
-    )
-
-    await ctx.send(
-        embed=embed,
-        view=KayitView(member)
-    )
-
-@bot.command()
-async def kayitsayi(
-    ctx,
-    member: discord.Member=None
-):
-
-    member = member or ctx.author
-
-    await ctx.send(
-        f"Kayıt sayısı: "
-        f"{kayit_sayilari[member.id]}"
-    )
-
-@bot.command()
-async def kayittop(ctx):
-
-    sorted_users = sorted(
-        kayit_sayilari.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )
-
-    text = ""
-
-    for i, (uid, amount) in enumerate(
-        sorted_users[:10],
-        start=1
-    ):
-
-        user = bot.get_user(uid)
-
-        text += (
-            f"{i}. {user} → "
-            f"{amount}\n"
-        )
-
-    embed = discord.Embed(
-        title="🏆 Kayıt Top",
-        description=text,
-        color=discord.Color.gold()
-    )
-
-    await ctx.send(embed=embed)
 
 # =========================================================
 # DEGER SISTEMI
