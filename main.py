@@ -341,6 +341,27 @@ async def dmall(ctx, *, mesaj):
     await ctx.send(
         f"✅ Gönderildi: {basarili}\n❌ Gönderilemedi: {basarisiz}"
     )
+@bot.command()
+async def kurallar(ctx):
+
+    embed = discord.Embed(
+        title="📜 SUNUCU KURALLARI",
+        description=(
+            "1️⃣ Saygılı ol. Küfür, hakaret yok. ama ettiğin adam rahatsız olmazsa edebilirsin küfür.\n"
+            "2️⃣ Spam ve flood yasak.\n"
+            "3️⃣ Reklam yapmak yasak.\n"
+            "4️⃣ Yetkililere saygılı davran.\n"
+            "5️⃣ Cinsellik ve cinsellikle ilgili içerik paylaşmak yasak.\n"
+            "6️⃣ Troll ve rahatsız edici davranış yasak.\n"
+            "7️⃣ Discord kurallarına uyulmak zorundadır.\n\n"
+            "⚠️ Kurallara uymayanlar cezalandırılır."
+        ),
+        color=discord.Color.dark_red()
+    )
+
+    embed.set_footer(text="Sunucu kurallarını okuyup kabul etmiş sayılırsın.")
+
+    await ctx.send(embed=embed)
 # =========================================================
 # MODERASYON
 # =========================================================
