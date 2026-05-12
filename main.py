@@ -895,11 +895,11 @@ async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: s
 
             s1, s2 = map(int, sonuc.split("-"))
             # Clean sheet (gol yememe)
-if s2 == 0:
-    clean_sheet[ev.id] += 1
+            if s2 == 0:
+                clean_sheet[ev.id] += 1
 
-if s1 == 0:
-    clean_sheet[dep.id] += 1
+            if s1 == 0:
+                clean_sheet[dep.id] += 1
 
             m["s1"] = s1
 
