@@ -89,6 +89,11 @@ kayit_sayilari = defaultdict(int)
 oyuncu_deger = defaultdict(lambda: 1)
 
 antrenman_sayisi = defaultdict(int)
+gol = defaultdict(int)
+
+asist = defaultdict(int)
+
+golyemeyen = defaultdict(int)
 
 # =========================================================
 # LIG DATABASE
@@ -771,176 +776,242 @@ async def rolal(
 # =========================================================
 
 @bot.command()
+
 async def ligekle(ctx, *, isim):
 
     global lig_adi
 
     lig_adi = isim
 
-    await ctx.send(
-        f"Lig oluşturuldu: {isim}"
-    )
+    await ctx.send(f"🏆 Lig: {isim}")
 
-@bot.command(name="ligtakımekle")
-async def ligtakimekle(ctx):
+@bot.command()
+
+async def ligtakımekle(ctx):
 
     global lig_takimlari
 
-    mentions = ctx.message.role_mentions
+    for r in ctx.message.role_mentions:
 
-    if not mentions:
-        return await ctx.send(
-            "Takım etiketle."
-        )
+        if r not in lig_takimlari:
 
-    for role in mentions:
+            lig_takimlari.append(r)
 
-        if role not in lig_takimlari:
-            lig_takimlari.append(role)
-
-    await ctx.send(
-        f"{len(mentions)} takım eklendi."
-    )
+    await ctx.send("Takımlar eklendi")
 
 @bot.command()
+
 async def fiksturolustur(ctx):
 
     global fikstur
+
     fikstur.clear()
 
-    takimlar = lig_takimlari.copy()
+    teams = lig_takimlari.copy()
 
-    # Tek sayıda takım varsa bye ekle
-    if len(takimlar) % 2 == 1:
-        takimlar.append(None)
+    if len(teams) % 2 == 1:
 
-    n = len(takimlar)
-    rounds = n - 1
+        teams.append(None)
+
+    n = len(teams)
+
     half = n // 2
 
-    for hafta in range(rounds):
+    for hafta in range(n - 1):
 
         for i in range(half):
 
-            ev = takimlar[i]
-            dep = takimlar[n - 1 - i]
+            ev = teams[i]
 
-            if ev is None or dep is None:
-                continue
+            dep = teams[n - 1 - i]
 
-            fikstur.append({
-                "hafta": hafta + 1,
-                "ev": ev,
-                "dep": dep,
-                "s1": None,
-                "s2": None
-            })
+            if ev and dep:
 
-        # Döndür (round-robin sistemi)
-        takimlar = (
-            [takimlar[0]] +
-            [takimlar[-1]] +
-            takimlar[1:-1]
-        )
+                fikstur.append({
 
-    await ctx.send("Fikstür düzgün şekilde oluşturuldu. Artık hafta 1 yalnız hissetmeyecek.")
+                    "hafta": hafta + 1,
 
+                    "ev": ev,
+
+                    "dep": dep,
+
+                    "s1": None,
+
+                    "s2": None,
+
+                    "played": False
+
+                })
+
+        teams = [teams[0]] + [teams[-1]] + teams[1:-1]
+
+    await ctx.send("Fikstür hazır")
+    
 @bot.command()
+
 async def hafta(ctx, number: int):
 
-    matches = [
-        x for x in fikstur
-        if x["hafta"] == number
-    ]
+    matches = [m for m in fikstur if m["hafta"] == number]
 
     if not matches:
-        return await ctx.send(
-            "Hafta bulunamadı."
-        )
+
+        return await ctx.send("Hafta yok")
 
     text = ""
 
     for m in matches:
 
-        ev = m["ev"]
-        dep = m["dep"]
+        ev = m["ev"].name
 
-        if m["s1"] is None:
-            text += (
-                f"{ev.mention} vs "
-                f"{dep.mention} — Oynanmadı\n"
-            )
+        dep = m["dep"].name
+
+        if not m["played"]:
+
+            text += f"⏳ {ev} vs {dep}\n"
+
         else:
-            text += (
-                f"{ev.mention} "
-                f"{m['s1']}-{m['s2']} "
-                f"{dep.mention}\n"
-            )
 
-    embed = discord.Embed(
-        title=f"📅 Hafta {number}",
-        description=text,
-        color=discord.Color.orange()
-    )
+            text += f"✅ {ev} {m['s1']}-{m['s2']} {dep}\n"
 
-    await ctx.send(embed=embed)
+    await ctx.send(text)
+
+# =========================================================
+
+# SKOR (TEK GİRİŞ + DUPLICATE ENGEL)
+
+# =========================================================
 
 @bot.command()
-async def skor(
-    ctx,
-    rol1: discord.Role,
-    rol2: discord.Role,
-    *,
-    sonuc: str
-):
 
-    if sonuc.lower() == "rastgele":
-        s1 = random.randint(0, 5)
-        s2 = random.randint(0, 5)
-    else:
-        try:
-            parcalar = sonuc.strip().split("-")
-            s1 = int(parcalar[0])
-            s2 = int(parcalar[1])
-        except:
-            return await ctx.send(
-                "Geçersiz format. Örnek: `3-2` ya da `rastgele`"
-            )
+async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: str):
 
-    # Puan güncelle
-    puan_durumu[rol1.id]["oynanan"] += 1
-    puan_durumu[rol2.id]["oynanan"] += 1
-    puan_durumu[rol1.id]["atilan"] += s1
-    puan_durumu[rol1.id]["yenilen"] += s2
-    puan_durumu[rol2.id]["atilan"] += s2
-    puan_durumu[rol2.id]["yenilen"] += s1
+    for m in fikstur:
 
-    if s1 > s2:
-        puan_durumu[rol1.id]["puan"] += 3
-        puan_durumu[rol1.id]["galibiyet"] += 1
-        puan_durumu[rol2.id]["maglubiyet"] += 1
-    elif s2 > s1:
-        puan_durumu[rol2.id]["puan"] += 3
-        puan_durumu[rol2.id]["galibiyet"] += 1
-        puan_durumu[rol1.id]["maglubiyet"] += 1
-    else:
-        puan_durumu[rol1.id]["puan"] += 1
-        puan_durumu[rol2.id]["puan"] += 1
-        puan_durumu[rol1.id]["beraberlik"] += 1
-        puan_durumu[rol2.id]["beraberlik"] += 1
+        if m["hafta"] == hafta_no and m["ev"] == ev and m["dep"] == dep:
 
-    embed = discord.Embed(
-        title="⚽ Maç Sonucu",
-        description=(
-            f"{rol1.mention} "
-            f"**{s1} - {s2}** "
-            f"{rol2.mention}"
-        ),
-        color=discord.Color.green()
+            if m["played"]:
+
+                return await ctx.send("⚠ Bu maç zaten girilmiş")
+
+            s1, s2 = map(int, sonuc.split("-"))
+            # Clean sheet (gol yememe)
+if s2 == 0:
+    clean_sheet[ev.id] += 1
+
+if s1 == 0:
+    clean_sheet[dep.id] += 1
+
+            m["s1"] = s1
+
+            m["s2"] = s2
+
+            m["played"] = True
+
+            puan_durumu[ev.id]["oynanan"] += 1
+
+            puan_durumu[dep.id]["oynanan"] += 1
+
+            if s1 > s2:
+
+                puan_durumu[ev.id]["puan"] += 3
+
+                puan_durumu[ev.id]["galibiyet"] += 1
+
+                puan_durumu[dep.id]["maglubiyet"] += 1
+
+            elif s2 > s1:
+
+                puan_durumu[dep.id]["puan"] += 3
+
+                puan_durumu[dep.id]["galibiyet"] += 1
+
+                puan_durumu[ev.id]["maglubiyet"] += 1
+
+            else:
+
+                puan_durumu[ev.id]["puan"] += 1
+
+                puan_durumu[dep.id]["puan"] += 1
+
+            return await ctx.send("Skor girildi")
+
+    await ctx.send("Maç bulunamadı")
+
+# =========================================================
+
+# SKOR DÜZENLE
+
+# =========================================================
+
+@bot.command()
+
+async def skordüzenle(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: str):
+
+    for m in fikstur:
+
+        if m["hafta"] == hafta_no and m["ev"] == ev and m["dep"] == dep:
+
+            old1, old2 = m["s1"], m["s2"]
+
+            if not m["played"]:
+
+                return await ctx.send("Önce skor girilmeli")
+
+            new1, new2 = map(int, sonuc.split("-"))
+
+            m["s1"], m["s2"] = new1, new2
+
+            return await ctx.send("Düzenlendi")
+
+    await ctx.send("Bulunamadı")
+
+# =========================================================
+
+# STAT KOMUTLARI
+
+# =========================================================
+
+@bot.command()
+
+async def golekle(ctx, member: discord.Member, amount: int):
+
+    gol[member.id] += amount
+
+    await ctx.send("Gol eklendi")
+
+@bot.command()
+
+async def asistekle(ctx, member: discord.Member, amount: int):
+
+    asist[member.id] += amount
+
+    await ctx.send("Asist eklendi")
+
+@bot.command()
+
+async def golyenmeyenmaç(ctx, member: discord.Member, amount: int):
+
+    golyemeyen[member.id] += amount
+
+    await ctx.send("Eklendi")
+
+@bot.command()
+
+async def golsayı(ctx, member: discord.Member):
+
+    await ctx.send(f"⚽ {gol[member.id]}")
+
+@bot.command()
+
+async def asistsayı(ctx, member: discord.Member):
+
+    await ctx.send(f"🎯 {asist[member.id]}")
+@bot.command()
+async def golyenmeyenmac(ctx, member: discord.Member):
+
+    await ctx.send(
+        f"🧤 Gol yemediği maç: {clean_sheet[member.id]}"
     )
-
-    await ctx.send(embed=embed)
-
 @bot.command()
 async def puan(ctx):
 
