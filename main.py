@@ -913,6 +913,83 @@ async def hafta(ctx, number: int):
             text += f"✅ {ev} {s1}-{s2} {dep}\n"
 
     await ctx.send(text)
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def toplumacbitir(ctx):
+
+    if len(fikstur) == 0:
+        return await ctx.send("❌ Fikstür yok")
+
+    biten = 0
+
+    for m in fikstur:
+
+        ev = m["ev"]
+        dep = m["dep"]
+
+        # random skor üret
+        s1 = random.randint(0, 5)
+        s2 = random.randint(0, 5)
+
+        m["s1"] = s1
+        m["s2"] = s2
+
+        # oynanan say
+        puan_durumu[ev.id]["oynanan"] += 1
+        puan_durumu[dep.id]["oynanan"] += 1
+
+        # sonuçlar
+        if s1 > s2:
+            puan_durumu[ev.id]["puan"] += 3
+            puan_durumu[ev.id]["galibiyet"] += 1
+            puan_durumu[dep.id]["maglubiyet"] += 1
+
+        elif s2 > s1:
+            puan_durumu[dep.id]["puan"] += 3
+            puan_durumu[dep.id]["galibiyet"] += 1
+            puan_durumu[ev.id]["maglubiyet"] += 1
+
+        else:
+            puan_durumu[ev.id]["puan"] += 1
+            puan_durumu[dep.id]["puan"] += 1
+
+            puan_durumu[ev.id]["beraberlik"] += 1
+            puan_durumu[dep.id]["beraberlik"] += 1
+
+        biten += 1
+
+    # sıralama
+    siralama = sorted(
+        lig_takimlari,
+        key=lambda r: puan_durumu[r.id]["puan"],
+        reverse=True
+    )
+
+    if not siralama:
+        return await ctx.send("❌ Takım yok")
+
+    sampiyon = siralama[0]
+
+    text = ""
+    for i, r in enumerate(siralama, start=1):
+        stats = puan_durumu[r.id]
+        text += (
+            f"{i}. {r.mention} | {stats['puan']} puan\n"
+            f"O:{stats['oynanan']} G:{stats['galibiyet']} "
+            f"B:{stats['beraberlik']} M:{stats['maglubiyet']}\n\n"
+        )
+
+    embed = discord.Embed(
+        title=f"🏁 {lig_adi or 'Lig'} TOPLU MAÇ BİTİRİLDİ",
+        description=(
+            f"👑 ŞAMPİYON: {sampiyon.mention}\n\n"
+            f"🎲 Oynanan maç: {biten}\n\n"
+            f"{text}"
+        ),
+        color=discord.Color.gold()
+    )
+
+    await ctx.send(embed=embed)
 # =========================================================
 
 # SKOR (TEK GİRİŞ + DUPLICATE ENGEL)
