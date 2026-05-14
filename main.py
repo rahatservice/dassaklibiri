@@ -846,68 +846,46 @@ async def fiksturolustur(ctx):
         teams = [teams[0]] + [teams[-1]] + teams[1:-1]
 
     await ctx.send("Fikstür hazır")
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def ligbitir(ctx):
-
-    await ctx.send("🏁 Lig bitiriliyor...")
-
-    if len(fikstur) == 0:
-        return await ctx.send("❌ Fikstür boş")
-
-    biten = 0
+    # MAÇ SONUÇLARI
+    mac_text = ""
 
     for m in fikstur:
-
-        ev = m["ev"]
-        dep = m["dep"]
-
-        s1 = random.randint(0, 5)
-        s2 = random.randint(0, 5)
-
-        m["s1"] = s1
-        m["s2"] = s2
-
-        puan_durumu[ev.id]["oynanan"] += 1
-        puan_durumu[dep.id]["oynanan"] += 1
-
-        if s1 > s2:
-            puan_durumu[ev.id]["puan"] += 3
-        elif s2 > s1:
-            puan_durumu[dep.id]["puan"] += 3
-        else:
-            puan_durumu[ev.id]["puan"] += 1
-            puan_durumu[dep.id]["puan"] += 1
-
-        biten += 1
-
-    await ctx.send(f"✅ Lig bitti. Maç sayısı: {biten}")
-
-@bot.command()
-async def hafta(ctx, number: int):
-
-    matches = [m for m in fikstur if m.get("hafta") == number]
-
-    if not matches:
-        return await ctx.send("❌ Bu hafta bulunamadı")
-
-    text = ""
-
-    for m in matches:
 
         ev = m["ev"].name
         dep = m["dep"].name
 
-        s1 = m.get("s1")
-        s2 = m.get("s2")
+        mac_text += f"⚽ {ev} {m['s1']} - {m['s2']} {dep}\n"
 
-        if s1 is None or s2 is None:
-            text += f"⏳ {ev} vs {dep}\n"
-        else:
-            text += f"✅ {ev} {s1}-{s2} {dep}\n"
+    # PUAN DURUMU
+    siralama = sorted(
+        lig_takimlari,
+        key=lambda r: puan_durumu[r.id]["puan"],
+        reverse=True
+    )
 
-    await ctx.send(text)
+    puan_text = ""
 
+    for i, role in enumerate(siralama, start=1):
+
+        stats = puan_durumu[role.id]
+
+        puan_text += (
+            f"{i}. {role.name} | {stats['puan']} P\n"
+            f"  O:{stats['oynanan']} G:{stats['galibiyet']} "
+            f"B:{stats['beraberlik']} M:{stats['maglubiyet']}\n\n"
+        )
+
+    embed = discord.Embed(
+        title=f"🏁 {lig_adi or 'Lig'} SEZON SONU",
+        description=(
+            f"🏆 ŞAMPİYON: {siralama[0].mention}\n\n"
+            f"📊 MAÇ SONUÇLARI\n{mac_text}\n"
+            f"📈 PUAN DURUMU\n{puan_text}"
+        ),
+        color=discord.Color.gold()
+    )
+
+    await ctx.send(embed=embed)
 # =========================================================
 
 # SKOR (TEK GİRİŞ + DUPLICATE ENGEL)
