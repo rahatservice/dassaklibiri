@@ -850,11 +850,15 @@ async def fiksturolustur(ctx):
 @commands.has_permissions(administrator=True)
 async def ligbitir(ctx):
 
+    if len(fikstur) == 0:
+        return await ctx.send("❌ Fikstür yok. Önce oluştur.")
+
     biten = 0
 
     for m in fikstur:
 
-        if not m["played"]:
+        # sadece oynanmayanları doldur
+        if m.get("played") is not True:
 
             ev = m["ev"]
             dep = m["dep"]
@@ -869,14 +873,12 @@ async def ligbitir(ctx):
             puan_durumu[ev.id]["oynanan"] += 1
             puan_durumu[dep.id]["oynanan"] += 1
 
-            # CLEAN SHEET
             if s2 == 0:
                 clean_sheet[ev.id] += 1
 
             if s1 == 0:
                 clean_sheet[dep.id] += 1
 
-            # SONUÇ
             if s1 > s2:
 
                 puan_durumu[ev.id]["puan"] += 3
@@ -899,49 +901,27 @@ async def ligbitir(ctx):
 
             biten += 1
 
-    # SIRALAMA
     siralama = sorted(
         lig_takimlari,
-        key=lambda r: (
-            puan_durumu[r.id]["puan"],
-            puan_durumu[r.id]["galibiyet"]
-        ),
+        key=lambda r: puan_durumu[r.id]["puan"],
         reverse=True
     )
 
-    text = ""
-
-    for i, role in enumerate(siralama, start=1):
-
-        stats = puan_durumu[role.id]
-
-        text += (
-            f"{i}. {role.mention}\n"
-            f"🏆 {stats['puan']} Puan\n"
-            f"⚽ O:{stats['oynanan']} "
-            f"G:{stats['galibiyet']} "
-            f"B:{stats['beraberlik']} "
-            f"M:{stats['maglubiyet']}\n\n"
-        )
+    if not siralama:
+        return await ctx.send("❌ Takım yok, lig boş.")
 
     sampiyon = siralama[0]
 
     embed = discord.Embed(
-        title=f"🏁 {lig_adi} Sona Erdi",
+        title=f"🏁 {lig_adi or 'Lig'} Bitti",
         description=(
-            f"👑 Şampiyon: {sampiyon.mention}\n\n"
-            f"🎲 Otomatik oynatılan maç: {biten}\n\n"
-            f"{text}"
+            f"👑 Şampiyon: {sampiyon.mention}\n"
+            f"🎲 Oynatılan maç: {biten}"
         ),
         color=discord.Color.gold()
     )
 
     await ctx.send(embed=embed)
-    await ctx.send(
-    f"📊 Takım sayısı: {len(lig_takimlari)}\n"
-    f"📅 Maç sayısı: {len(fikstur)}\n"
-    f"⛔ Oynanmamış: {len([m for m in fikstur if not m['played']])}"
-)
     
 @bot.command()
 
