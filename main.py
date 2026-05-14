@@ -16,8 +16,10 @@ from discord.ui import View, Select
 
 TOKEN = os.getenv("TOKEN")
 
-intents = discord.Intents.all()
-intents.members = True
+
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True bunu nereye
 
 bot = commands.Bot(
     command_prefix=".",
