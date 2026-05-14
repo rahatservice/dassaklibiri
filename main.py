@@ -846,6 +846,63 @@ async def fiksturolustur(ctx):
         teams = [teams[0]] + [teams[-1]] + teams[1:-1]
 
     await ctx.send("Fikstür hazır")
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def ligbitir(ctx):
+
+    biten = 0
+
+    for m in fikstur:
+
+        if not m["played"]:
+
+            ev = m["ev"]
+            dep = m["dep"]
+
+            s1 = random.randint(0, 5)
+            s2 = random.randint(0, 5)
+
+            m["s1"] = s1
+            m["s2"] = s2
+            m["played"] = True
+
+            puan_durumu[ev.id]["oynanan"] += 1
+            puan_durumu[dep.id]["oynanan"] += 1
+
+            # CLEAN SHEET
+            if s2 == 0:
+                clean_sheet[ev.id] += 1
+
+            if s1 == 0:
+                clean_sheet[dep.id] += 1
+
+            # PUANLAR
+            if s1 > s2:
+
+                puan_durumu[ev.id]["puan"] += 3
+                puan_durumu[ev.id]["galibiyet"] += 1
+                puan_durumu[dep.id]["maglubiyet"] += 1
+
+            elif s2 > s1:
+
+                puan_durumu[dep.id]["puan"] += 3
+                puan_durumu[dep.id]["galibiyet"] += 1
+                puan_durumu[ev.id]["maglubiyet"] += 1
+
+            else:
+
+                puan_durumu[ev.id]["puan"] += 1
+                puan_durumu[dep.id]["puan"] += 1
+
+                puan_durumu[ev.id]["beraberlik"] += 1
+                puan_durumu[dep.id]["beraberlik"] += 1
+
+            biten += 1
+
+    await ctx.send(
+        f"🏁 Lig bitirildi.\n"
+        f"🎲 Otomatik oynatılan maç sayısı: {biten}"
+    )
     
 @bot.command()
 
