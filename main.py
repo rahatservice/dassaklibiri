@@ -882,7 +882,7 @@ async def hafta(ctx, number: int):
 # =========================================================
 
 @bot.command()
-
+@commands.has_permissions(administrator=True)
 async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: str):
 
     for m in fikstur:
@@ -890,11 +890,19 @@ async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: s
         if m["hafta"] == hafta_no and m["ev"] == ev and m["dep"] == dep:
 
             if m["played"]:
-
                 return await ctx.send("⚠ Bu maç zaten girilmiş")
 
-            s1, s2 = map(int, sonuc.split("-"))
-            # Clean sheet (gol yememe)
+            # RANDOM SKOR
+            if sonuc.lower() == "rastgele":
+
+                s1 = random.randint(0, 5)
+                s2 = random.randint(0, 5)
+
+            else:
+
+                s1, s2 = map(int, sonuc.split("-"))
+
+            # CLEAN SHEET
             if s2 == 0:
                 clean_sheet[ev.id] += 1
 
@@ -902,38 +910,36 @@ async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: s
                 clean_sheet[dep.id] += 1
 
             m["s1"] = s1
-
             m["s2"] = s2
-
             m["played"] = True
 
             puan_durumu[ev.id]["oynanan"] += 1
-
             puan_durumu[dep.id]["oynanan"] += 1
 
             if s1 > s2:
 
                 puan_durumu[ev.id]["puan"] += 3
-
                 puan_durumu[ev.id]["galibiyet"] += 1
-
                 puan_durumu[dep.id]["maglubiyet"] += 1
 
             elif s2 > s1:
 
                 puan_durumu[dep.id]["puan"] += 3
-
                 puan_durumu[dep.id]["galibiyet"] += 1
-
                 puan_durumu[ev.id]["maglubiyet"] += 1
 
             else:
 
                 puan_durumu[ev.id]["puan"] += 1
-
                 puan_durumu[dep.id]["puan"] += 1
 
-            return await ctx.send("Skor girildi")
+                puan_durumu[ev.id]["beraberlik"] += 1
+                puan_durumu[dep.id]["beraberlik"] += 1
+
+            await ctx.send(
+                f"✅ Skor girildi: {ev.mention} {s1}-{s2} {dep.mention}"
+            )
+            return
 
     await ctx.send("Maç bulunamadı")
 
