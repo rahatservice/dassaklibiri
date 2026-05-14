@@ -469,7 +469,63 @@ async def dmall(ctx, *, mesaj):
     await ctx.send(
         f"✅ Gönderildi: {basarili}\n❌ Gönderilemedi: {basarisiz}"
     )
+@bot.command
+
+# OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+
+@bot.command(name="oyuncu-ekle")
+@commands.has_permissions(administrator=True)
+async def oyuncu_ekle(ctx, takim: discord.Role, oyuncu: discord.Member):
+
+    if oyuncu.id not in oyuncular:
+        oyuncular[oyuncu.id] = {
+            "ulke": "Bilinmiyor",
+            "mevki": "OS",
+            "deger": 1,
+            "gol": 0,
+            "kart_sari": 0,
+            "kart_kirmizi": 0,
+            "rating": 50,
+            "takim": takim.id
+        }
+    else:
+        oyuncular[oyuncu.id]["takim"] = takim.id
+
+    if takim.id not in takim_oyuncular:
+        takim_oyuncular[takim.id] = []
+
+    if oyuncu not in takim_oyuncular[takim.id]:
+        takim_oyuncular[takim.id].append(oyuncu)
+
+    await ctx.send(f"👤 {oyuncu.mention} → {takim.name} kadrosuna eklendi")
 @bot.command()
+async def kadro(ctx):
+
+    if not oyuncular:
+        return await ctx.send("❌ Kadro boş")
+
+    text = ""
+
+    for uid, o in oyuncular.items():
+
+        member = ctx.guild.get_member(uid)
+        if not member:
+            continue
+
+        text += (
+            f"👤 {member.display_name}\n"
+            f"📌 {o['mevki']} | ⭐ {o['rating']} | 💰 {o['deger']}M\n\n"
+        )
+
+    embed = discord.Embed(
+        title="⚽ TAKIM KADROSU",
+        description=text,
+        color=discord.Color.gold()
+    )
+
+    await ctx.send(embed=embed)
+
+    await ctx.send(f"👤 {member.mention} eklendi → {mevki}")
 async def şart(ctx):
 
     if ctx.channel.id != 1503342028170199100:
