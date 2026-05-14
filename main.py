@@ -978,23 +978,20 @@ async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: s
 
     for m in fikstur:
 
-            if (
-                m["hafta"] == hafta_no
-                and m["ev"].id == ev.id
-                and m["dep"].id == dep.id
-                ):
+        if (
+            m["hafta"] == hafta_no
+            and m["ev"].id == ev.id
+            and m["dep"].id == dep.id
+        ):
 
             if m["played"]:
                 return await ctx.send("⚠ Bu maç zaten girilmiş")
 
             # RANDOM SKOR
             if sonuc.lower() == "rastgele":
-
                 s1 = random.randint(0, 5)
                 s2 = random.randint(0, 5)
-
             else:
-
                 s1, s2 = map(int, sonuc.split("-"))
 
             # CLEAN SHEET
@@ -1036,7 +1033,7 @@ async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: s
             )
             return
 
-    await ctx.send("Maç bulunamadı")
+    await ctx.send("❌ Maç bulunamadı")
 
 # =========================================================
 
@@ -1045,30 +1042,68 @@ async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: s
 # =========================================================
 
 @bot.command()
-
+@commands.has_permissions(administrator=True)
 async def skordüzenle(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: str):
 
     for m in fikstur:
 
-            if (
-                m["hafta"] == hafta_no
-                and m["ev"].id == ev.id
-                and m["dep"].id == dep.id
-                ):
+        if (
+            m["hafta"] == hafta_no
+            and m["ev"].id == ev.id
+            and m["dep"].id == dep.id
+        ):
+
+            if not m["played"]:
+                return await ctx.send("⚠ Önce bu maçın skoru girilmeli")
 
             old1, old2 = m["s1"], m["s2"]
 
-            if not m["played"]:
-
-                return await ctx.send("Önce skor girilmeli")
-
             new1, new2 = map(int, sonuc.split("-"))
 
-            m["s1"], m["s2"] = new1, new2
+            # eski skor etkisini geri alma (puan rollback)
+            if old1 > old2:
+                puan_durumu[ev.id]["puan"] -= 3
+                puan_durumu[ev.id]["galibiyet"] -= 1
+                puan_durumu[dep.id]["maglubiyet"] -= 1
 
-            return await ctx.send("Düzenlendi")
+            elif old2 > old1:
+                puan_durumu[dep.id]["puan"] -= 3
+                puan_durumu[dep.id]["galibiyet"] -= 1
+                puan_durumu[ev.id]["maglubiyet"] -= 1
 
-    await ctx.send("Bulunamadı")
+            else:
+                puan_durumu[ev.id]["puan"] -= 1
+                puan_durumu[dep.id]["puan"] -= 1
+
+                puan_durumu[ev.id]["beraberlik"] -= 1
+                puan_durumu[dep.id]["beraberlik"] -= 1
+
+            # yeni skor
+            m["s1"] = new1
+            m["s2"] = new2
+
+            # yeni puan uygula
+            if new1 > new2:
+                puan_durumu[ev.id]["puan"] += 3
+                puan_durumu[ev.id]["galibiyet"] += 1
+                puan_durumu[dep.id]["maglubiyet"] += 1
+
+            elif new2 > new1:
+                puan_durumu[dep.id]["puan"] += 3
+                puan_durumu[dep.id]["galibiyet"] += 1
+                puan_durumu[ev.id]["maglubiyet"] += 1
+
+            else:
+                puan_durumu[ev.id]["puan"] += 1
+                puan_durumu[dep.id]["puan"] += 1
+
+                puan_durumu[ev.id]["beraberlik"] += 1
+                puan_durumu[dep.id]["beraberlik"] += 1
+
+            await ctx.send("✏ Skor güncellendi")
+            return
+
+    await ctx.send("❌ Maç bulunamadı")
 
 # =========================================================
 
