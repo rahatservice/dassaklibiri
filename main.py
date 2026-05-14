@@ -546,7 +546,59 @@ async def şart(ctx):
     )
 
     await ctx.send(embed=embed)
+@bot.command()
+async def macsun(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role):
 
+    match = None
+
+    for m in fikstur:
+        if m["hafta"] == hafta_no and m["ev"] == ev and m["dep"] == dep:
+            match = m
+            break
+
+    if not match:
+        return await ctx.send("❌ Maç bulunamadı")
+
+    ev_kadro = takim_oyuncular[ev.id]
+    dep_kadro = takim_oyuncular[dep.id]
+
+    # SKOR YOKSA RANDOM OYNAT
+    if not match["played"]:
+
+        s1 = random.randint(0, 5)
+        s2 = random.randint(0, 5)
+
+        match["s1"] = s1
+        match["s2"] = s2
+        match["played"] = True
+
+    else:
+        s1 = match["s1"]
+        s2 = match["s2"]
+
+    # GOL ANLATIMI
+    gol_text = ""
+
+    for i in range(s1):
+        scorer = random.choice(list(oyuncular.values())) if oyuncular else None
+        gol_text += f"⚽ {ev.name} gol!\n"
+
+    for i in range(s2):
+        gol_text += f"⚽ {dep.name} gol!\n"
+
+    embed = discord.Embed(
+        title="📺 CANLI MAÇ SUNUMU",
+        description=(
+            f"🏟 {ev.name} vs {dep.name}\n\n"
+            f"🔵 Ev Kadro: {len(ev_kadro)} oyuncu\n"
+            f"🔴 Dep Kadro: {len(dep_kadro)} oyuncu\n\n"
+            f"📊 SKOR: {ev.name} {s1} - {s2} {dep.name}\n\n"
+            f"⚡ OLAYLAR:\n{gol_text if gol_text else 'Sessiz maç... kimse oynamamış gibi.'}"
+        ),
+        color=discord.Color.red()
+    )
+
+    await ctx.send(embed=embed)
     
 @bot.command()
 @commands.has_permissions(administrator=True)
