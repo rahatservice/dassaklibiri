@@ -978,7 +978,11 @@ async def skor(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, sonuc: s
 
     for m in fikstur:
 
-        if m["hafta"] == hafta_no and m["ev"] == ev and m["dep"] == dep:
+            if (
+                m["hafta"] == hafta_no
+                and m["ev"].id == ev.id
+                and m["dep"].id == dep.id
+                ):
 
             if m["played"]:
                 return await ctx.send("⚠ Bu maç zaten girilmiş")
@@ -1046,7 +1050,11 @@ async def skordüzenle(ctx, hafta_no: int, ev: discord.Role, dep: discord.Role, 
 
     for m in fikstur:
 
-        if m["hafta"] == hafta_no and m["ev"] == ev and m["dep"] == dep:
+            if (
+                m["hafta"] == hafta_no
+                and m["ev"].id == ev.id
+                and m["dep"].id == dep.id
+                ):
 
             old1, old2 = m["s1"], m["s2"]
 
