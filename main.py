@@ -472,6 +472,23 @@ async def dmall(ctx, *, mesaj):
 @bot.command
 
 # OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def puandurumutemizle(ctx):
+
+    for team_id in puan_durumu:
+
+        puan_durumu[team_id] = {
+            "puan": 0,
+            "oynanan": 0,
+            "galibiyet": 0,
+            "beraberlik": 0,
+            "maglubiyet": 0,
+            "atilan": 0,
+            "yenilen": 0
+        }
+
+    await ctx.send("🧹 Puan durumu tamamen sıfırlandı!")
 
 @bot.command(name="oyuncu-ekle")
 @commands.has_permissions(administrator=True)
