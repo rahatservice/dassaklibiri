@@ -96,6 +96,19 @@ gol = defaultdict(int)
 asist = defaultdict(int)
 
 golyemeyen = defaultdict(int)
+GECERLI_MEVKILER = [
+    "KL",
+    "SLB",
+    "STP1",
+    "STP2",
+    "SGB",
+    "DOS",
+    "OS",
+    "SLK",
+    "OOS",
+    "SGK",
+    "SNT"
+]
 
 # =========================================================
 # LIG DATABASE
