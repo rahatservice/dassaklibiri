@@ -850,6 +850,11 @@ async def fiksturolustur(ctx):
 @commands.has_permissions(administrator=True)
 async def ligbitir(ctx):
 
+    await ctx.send("🏁 Lig bitiriliyor...")
+
+    if len(fikstur) == 0:
+        return await ctx.send("❌ Fikstür boş")
+
     biten = 0
 
     for m in fikstur:
@@ -857,86 +862,26 @@ async def ligbitir(ctx):
         ev = m["ev"]
         dep = m["dep"]
 
-        # HER DURUMDA YENİ SKOR
         s1 = random.randint(0, 5)
         s2 = random.randint(0, 5)
 
-        # eski skor varsa PUAN GERİ AL (çakışmayı önler)
-        if m["s1"] is not None and m["s2"] is not None:
-
-            old1 = m["s1"]
-            old2 = m["s2"]
-
-            if old1 > old2:
-                puan_durumu[ev.id]["puan"] -= 3
-                puan_durumu[ev.id]["galibiyet"] -= 1
-                puan_durumu[dep.id]["maglubiyet"] -= 1
-
-            elif old2 > old1:
-                puan_durumu[dep.id]["puan"] -= 3
-                puan_durumu[dep.id]["galibiyet"] -= 1
-                puan_durumu[ev.id]["maglubiyet"] -= 1
-
-            else:
-                puan_durumu[ev.id]["puan"] -= 1
-                puan_durumu[dep.id]["puan"] -= 1
-
-                puan_durumu[ev.id]["beraberlik"] -= 1
-                puan_durumu[dep.id]["beraberlik"] -= 1
-
-        # yeni skor yaz
         m["s1"] = s1
         m["s2"] = s2
 
         puan_durumu[ev.id]["oynanan"] += 1
         puan_durumu[dep.id]["oynanan"] += 1
 
-        if s2 == 0:
-            clean_sheet[ev.id] += 1
-
-        if s1 == 0:
-            clean_sheet[dep.id] += 1
-
         if s1 > s2:
-
             puan_durumu[ev.id]["puan"] += 3
-            puan_durumu[ev.id]["galibiyet"] += 1
-            puan_durumu[dep.id]["maglubiyet"] += 1
-
         elif s2 > s1:
-
             puan_durumu[dep.id]["puan"] += 3
-            puan_durumu[dep.id]["galibiyet"] += 1
-            puan_durumu[ev.id]["maglubiyet"] += 1
-
         else:
-
             puan_durumu[ev.id]["puan"] += 1
             puan_durumu[dep.id]["puan"] += 1
 
-            puan_durumu[ev.id]["beraberlik"] += 1
-            puan_durumu[dep.id]["beraberlik"] += 1
-
         biten += 1
 
-    siralama = sorted(
-        lig_takimlari,
-        key=lambda r: puan_durumu[r.id]["puan"],
-        reverse=True
-    )
-
-    sampiyon = siralama[0] if siralama else None
-
-    embed = discord.Embed(
-        title=f"🏁 {lig_adi or 'Lig'} Bitti",
-        description=(
-            f"👑 Şampiyon: {sampiyon.mention if sampiyon else 'Yok'}\n"
-            f"🎲 Toplam oynatılan maç: {biten}"
-        ),
-        color=discord.Color.gold()
-    )
-
-    await ctx.send(embed=embed)
+    await ctx.send(f"✅ Lig bitti. Maç sayısı: {biten}")
 
 @bot.command()
 async def hafta(ctx, number: int):
