@@ -937,6 +937,11 @@ async def ligbitir(ctx):
     )
 
     await ctx.send(embed=embed)
+    await ctx.send(
+    f"📊 Takım sayısı: {len(lig_takimlari)}\n"
+    f"📅 Maç sayısı: {len(fikstur)}\n"
+    f"⛔ Oynanmamış: {len([m for m in fikstur if not m['played']])}"
+)
     
 @bot.command()
 
