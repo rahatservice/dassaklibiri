@@ -886,6 +886,31 @@ async def fiksturolustur(ctx):
     )
 
     await ctx.send(embed=embed)
+
+@bot.command()
+async def hafta(ctx, number: int):
+
+    matches = [m for m in fikstur if m.get("hafta") == number]
+
+    if not matches:
+        return await ctx.send("❌ Bu hafta bulunamadı")
+
+    text = ""
+
+    for m in matches:
+
+        ev = m["ev"].name
+        dep = m["dep"].name
+
+        s1 = m.get("s1")
+        s2 = m.get("s2")
+
+        if s1 is None or s2 is None:
+            text += f"⏳ {ev} vs {dep}\n"
+        else:
+            text += f"✅ {ev} {s1}-{s2} {dep}\n"
+
+    await ctx.send(text)
 # =========================================================
 
 # SKOR (TEK GİRİŞ + DUPLICATE ENGEL)
