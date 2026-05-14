@@ -876,7 +876,7 @@ async def ligbitir(ctx):
             if s1 == 0:
                 clean_sheet[dep.id] += 1
 
-            # PUANLAR
+            # SONUÇ
             if s1 > s2:
 
                 puan_durumu[ev.id]["puan"] += 3
@@ -899,10 +899,44 @@ async def ligbitir(ctx):
 
             biten += 1
 
-    await ctx.send(
-        f"🏁 Lig bitirildi.\n"
-        f"🎲 Otomatik oynatılan maç sayısı: {biten}"
+    # SIRALAMA
+    siralama = sorted(
+        lig_takimlari,
+        key=lambda r: (
+            puan_durumu[r.id]["puan"],
+            puan_durumu[r.id]["galibiyet"]
+        ),
+        reverse=True
     )
+
+    text = ""
+
+    for i, role in enumerate(siralama, start=1):
+
+        stats = puan_durumu[role.id]
+
+        text += (
+            f"{i}. {role.mention}\n"
+            f"🏆 {stats['puan']} Puan\n"
+            f"⚽ O:{stats['oynanan']} "
+            f"G:{stats['galibiyet']} "
+            f"B:{stats['beraberlik']} "
+            f"M:{stats['maglubiyet']}\n\n"
+        )
+
+    sampiyon = siralama[0]
+
+    embed = discord.Embed(
+        title=f"🏁 {lig_adi} Sona Erdi",
+        description=(
+            f"👑 Şampiyon: {sampiyon.mention}\n\n"
+            f"🎲 Otomatik oynatılan maç: {biten}\n\n"
+            f"{text}"
+        ),
+        color=discord.Color.gold()
+    )
+
+    await ctx.send(embed=embed)
     
 @bot.command()
 
